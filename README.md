@@ -1,5 +1,6 @@
 # Grants Management System
 
+
 A comprehensive web application for managing grant applications, projects, and funding workflows. Built with modern web technologies for efficiency and scalability.
 
 ## Features
