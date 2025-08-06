@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class GrantCallCreate(BaseModel):
@@ -11,6 +11,9 @@ class GrantCallCreate(BaseModel):
     requirements: str
     status: str = "Open"
     visibility: str = "Public"
+    
+    class Config:
+        allow_population_by_field_name = True
 
 class GrantCallUpdate(BaseModel):
     title: Optional[str] = None
@@ -22,6 +25,9 @@ class GrantCallUpdate(BaseModel):
     requirements: Optional[str] = None
     status: Optional[str] = None
     visibility: Optional[str] = None
+    
+    class Config:
+        allow_population_by_field_name = True
 
 class GrantCallResponse(BaseModel):
     id: str
@@ -34,5 +40,8 @@ class GrantCallResponse(BaseModel):
     requirements: str
     status: str
     visibility: str
-    created_at: str
-    updated_at: str
+    created_at: str = Field(alias="createdAt")
+    updated_at: str = Field(alias="updatedAt")
+    
+    class Config:
+        allow_population_by_field_name = True

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
 class UserCreate(BaseModel):
@@ -20,7 +20,10 @@ class UserResponse(BaseModel):
     email: EmailStr
     role: str
     status: str
-    created_at: str
+    created_at: str = Field(alias="createdAt")
+    
+    class Config:
+        allow_population_by_field_name = True
 
 class UserLogin(BaseModel):
     email: EmailStr
