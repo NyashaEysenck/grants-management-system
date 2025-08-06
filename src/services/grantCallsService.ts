@@ -13,6 +13,8 @@ export interface GrantCall {
   requirements: string;
   status: 'Open' | 'Closed';
   visibility: 'Public' | 'Restricted';
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Initialize persistent storage with fallback to JSON data

@@ -15,8 +15,8 @@ class GrantCall(BaseModel):
     requirements: str
     status: str = "Open"  # Open, Closed
     visibility: str = "Public"  # Public, Restricted
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow, alias="createdAt")
+    updated_at: datetime = Field(default_factory=datetime.utcnow, alias="updatedAt")
 
     class Config:
         allow_population_by_field_name = True
