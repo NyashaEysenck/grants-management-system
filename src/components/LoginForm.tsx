@@ -107,10 +107,9 @@ const LoginForm = () => {
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-600 mb-2 font-semibold">Demo Credentials:</p>
             <div className="text-xs text-gray-500 space-y-1">
-              <div>• admin@example.com / admin123 (Administrator)</div>
-              <div>• reviewer@example.com / reviewer123 (Reviewer)</div>
-              <div>• applicant@example.com / applicant123 (Applicant)</div>
-              <div>• demo@example.com / demo123 (Demo User)</div>
+              <div>• researcher@grants.edu / research123</div>
+              <div>• manager@grants.edu / manager123</div>
+              <div>• admin@grants.edu / admin123</div>
             </div>
           </div>
         </CardContent>
