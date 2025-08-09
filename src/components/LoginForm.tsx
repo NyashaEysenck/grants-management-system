@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LogIn } from 'lucide-react';
@@ -13,18 +13,17 @@ import { LogIn } from 'lucide-react';
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    if (!email || !password || !role) {
+    if (!email || !password) {
       setError('Please fill in all fields');
       return;
     }
@@ -32,11 +31,11 @@ const LoginForm = () => {
     setIsLoading(true);
     
     try {
-      const success = await login(email, password, role);
+      const success = await login(email, password);
       if (success) {
         navigate('/dashboard');
       } else {
-        setError('Invalid credentials or role mismatch');
+        setError('Invalid credentials. Please check your email and password.');
       }
     } catch (err) {
       setError('Login failed. Please try again.');
@@ -88,19 +87,7 @@ const LoginForm = () => {
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={role} onValueChange={setRole} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Researcher">Researcher</SelectItem>
-                  <SelectItem value="Grants Manager">Grants Manager</SelectItem>
-                  <SelectItem value="Admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
             
             {error && (
               <Alert variant="destructive">
@@ -120,9 +107,9 @@ const LoginForm = () => {
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-600 mb-2 font-semibold">Demo Credentials:</p>
             <div className="text-xs text-gray-500 space-y-1">
-              <div>• researcher@grants.edu / research123 (Researcher)</div>
-              <div>• manager@grants.edu / manager123 (Grants Manager)</div>
-              <div>• admin@grants.edu / admin123 (Admin)</div>
+              <div>• researcher@grants.edu / research123</div>
+              <div>• manager@grants.edu / manager123</div>
+              <div>• admin@grants.edu / admin123</div>
             </div>
           </div>
         </CardContent>

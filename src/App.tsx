@@ -21,33 +21,17 @@ import NotFound from "./pages/NotFound";
 import ReviewerPage from "./components/ReviewerPage";
 import SignOffPage from "./components/SignOffPage";
 import VCSignOffPage from "./components/VCSignOffPage";
-import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Only apply GitHub Pages routing logic in production
-  useEffect(() => {
-    if (import.meta.env.PROD) {
-      // Handle GitHub Pages SPA routing
-      const query = window.location.search;
-      if (query.startsWith('?/')) {
-        const route = query.slice(2).replace(/&/g, '&').replace(/~and~/g, '&');
-        window.history.replaceState(null, '', route || '/');
-      }
-    }
-  }, []);
-
-  // Use basename only in production for GitHub Pages
-  const basename = import.meta.env.PROD ? '/grants-management-system' : '';
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <AuthProvider>
-          <BrowserRouter basename={basename}>
+          <BrowserRouter>
             <Routes>
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />

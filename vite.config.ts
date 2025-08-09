@@ -10,9 +10,6 @@ export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production';
   
   return {
-    // Base URL for GitHub Pages (will be set to repo name in production)
-    base: isProduction ? '/grants-management-system/' : '/',
-    
     // Development server configuration
     server: {
       host: "::",
