@@ -125,62 +125,52 @@ class DocumentsService {
         formData.append('notes', notes);
       }
 
-      // Use XMLHttpRequest for progress tracking
-      return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
+      // Use apiClient for proper authentication and error handling
+      // Note: We lose progress tracking but gain proper auth handling
+      try {
+        // Simulate progress for user feedback
+        if (onProgress) {
+          onProgress(10);
+          setTimeout(() => onProgress(30), 100);
+          setTimeout(() => onProgress(60), 300);
+          setTimeout(() => onProgress(90), 500);
+        }
 
-        // Track upload progress
-        xhr.upload.addEventListener('progress', (event) => {
-          if (event.lengthComputable && onProgress) {
-            const progress = Math.round((event.loaded / event.total) * 100);
-            onProgress(progress);
-            console.log(`Upload progress: ${progress}%`);
-          }
+        const response = await apiClient.post('/documents/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 300000, // 5 minute timeout
         });
 
-        // Handle completion
-        xhr.addEventListener('load', async () => {
-          try {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              const result = JSON.parse(xhr.responseText);
-              console.log('Document uploaded successfully:', result);
-              resolve(result);
-            } else {
-              let errorMessage = 'Upload failed';
-              try {
-                const errorData = JSON.parse(xhr.responseText);
-                errorMessage = errorData.detail || errorMessage;
-              } catch (e) {
-                errorMessage = `Upload failed with status ${xhr.status}`;
-              }
-              reject(new Error(errorMessage));
-            }
-          } catch (error) {
-            reject(new Error('Failed to process upload response'));
-          }
-        });
+        if (onProgress) {
+          onProgress(100);
+        }
 
-        // Handle errors
-        xhr.addEventListener('error', () => {
-          reject(new Error('Network error during upload. Please check your connection and try again.'));
-        });
-
-        xhr.addEventListener('timeout', () => {
-          reject(new Error('Upload timed out. Please try again with a smaller file or check your connection.'));
-        });
-
-        xhr.addEventListener('abort', () => {
-          reject(new Error('Upload was cancelled'));
-        });
-
-        // Configure request
-        xhr.open('POST', `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/documents/upload`);
-        xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('access_token')}`);
-        xhr.timeout = 300000; // 5 minute timeout
-
-        // Start upload
-        xhr.send(formData);
-      });
+        console.log('Document uploaded successfully:', response);
+        return response;
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        
+        let errorMessage = 'Upload failed';
+        if (error.response?.data?.detail) {
+          errorMessage = error.response.data.detail;
+        } else if (error.response?.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (error.response?.status === 403) {
+          errorMessage = 'You do not have permission to upload documents.';
+        } else if (error.response?.status === 413) {
+          errorMessage = 'File too large. Please choose a smaller file.';
+        } else if (error.message?.includes('timeout')) {
+          errorMessage = 'Upload timed out. Please try again with a smaller file or check your connection.';
+        } else if (error.message?.includes('Network')) {
+          errorMessage = 'Network error during upload. Please check your connection and try again.';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
+      }
 
     } catch (error) {
       console.error('Error uploading document:', error);
@@ -257,6 +247,58 @@ class DocumentsService {
     } catch (error) {
       console.error('Error downloading document:', error);
       throw error;
+    }
+  }
+
+  // Download application document by filename for grants managers and reviewers
+  async downloadApplicationDocument(applicationId: string, filename: string): Promise<void> {
+    try {
+      const response = await apiClient.get(`/applications/${applicationId}/document/${encodeURIComponent(filename)}`, {
+        responseType: 'blob',
+        timeout: 60000, // 1 minute timeout for large files
+      });
+
+      // Get the actual filename from the response headers or use the provided filename
+      const contentDisposition = response.headers['content-disposition'];
+      let downloadFilename = filename;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          downloadFilename = filenameMatch[1];
+        }
+      }
+
+      // Create blob and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = downloadFilename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      console.log('Application document downloaded successfully:', downloadFilename);
+    } catch (error: any) {
+      console.error('Error downloading application document:', error);
+      
+      let errorMessage = 'Failed to download document';
+      if (error.response?.status === 404) {
+        errorMessage = 'Document not found. It may have been deleted or moved.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'You do not have permission to download this document.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please log in again.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Download timed out. The file may be too large or your connection is slow.';
+      } else if (error.message?.includes('Network')) {
+        errorMessage = 'Network error during download. Please check your connection.';
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      }
+      
+      throw new Error(errorMessage);
     }
   }
 
@@ -340,3 +382,7 @@ class DocumentsService {
 }
 
 export const documentsService = new DocumentsService();
+
+// Export the downloadApplicationDocument function for use in components
+export const downloadApplicationDocument = (applicationId: string, filename: string) => 
+  documentsService.downloadApplicationDocument(applicationId, filename);

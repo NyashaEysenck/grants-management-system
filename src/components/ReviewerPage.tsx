@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
-import { FileText, Upload, CheckCircle } from 'lucide-react';
+import { FileText, Upload, CheckCircle, Download } from 'lucide-react';
 import { getApplicationByReviewToken, submitReviewerFeedback, type Application } from '../services/applicationsService';
+import { downloadApplicationDocument } from '../services/documentsService';
 import { useToast } from '@/hooks/use-toast';
 
 interface ReviewFormData {
@@ -61,6 +62,31 @@ const ReviewerPage = () => {
     if (file) {
       setSelectedFile(file);
       form.setValue('annotatedFile', file);
+    }
+  };
+
+  const handleDownloadDocument = async () => {
+    if (!application?.proposalFileName) {
+      toast({
+        title: "No Document",
+        description: "No document has been uploaded for this application.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await downloadApplicationDocument(application.id, application.proposalFileName);
+      toast({
+        title: "Download Started",
+        description: "The document download has started.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Download Failed",
+        description: error.message || "Failed to download the document.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -146,6 +172,23 @@ const ReviewerPage = () => {
                 <p className="text-sm text-gray-600">
                   <span className="font-medium">Email:</span> {application.email}
                 </p>
+                {application.biodata && (
+                  <>
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Age:</span> {application.biodata.age} years old
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">First-time Applicant:</span>{' '}
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        application.biodata.firstTimeApplicant 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {application.biodata.firstTimeApplicant ? 'Yes' : 'No'}
+                      </span>
+                    </p>
+                  </>
+                )}
               </div>
               <div>
                 <p className="text-sm text-gray-600">
@@ -155,6 +198,32 @@ const ReviewerPage = () => {
                 <p className="text-sm text-gray-600">
                   <span className="font-medium">Grant ID:</span> {application.grantId}
                 </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Document Uploaded:</span>{' '}
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    application.proposalFileName 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {application.proposalFileName ? 'Yes' : 'No'}
+                  </span>
+                </p>
+                {application.proposalFileName && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">File Name:</span> {application.proposalFileName}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleDownloadDocument}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      View Document
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>

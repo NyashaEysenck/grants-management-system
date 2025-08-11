@@ -27,8 +27,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
-import { Eye, Filter, UserPlus, RotateCcw, Trash2, Edit, Send, CheckCircle, FileText, MessageSquare, Search } from 'lucide-react';
+import { Eye, Filter, UserPlus, RotateCcw, Trash2, Edit, Send, CheckCircle, FileText, MessageSquare, Search, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { downloadApplicationDocument } from '../services/documentsService';
 import ReviewerAssignmentDialog from '../components/ReviewerAssignmentDialog';
 import SignOffInitiationDialog from '../components/SignOffInitiationDialog';
 import SignOffStatusCard from '../components/SignOffStatusCard';
@@ -509,6 +510,31 @@ const Applications = () => {
       setIsSignOffInitiationOpen(true);
     };
 
+    const handleDownloadDocument = async (application: Application) => {
+      if (!application.proposalFileName) {
+        toast({
+          title: "No Document",
+          description: "No document has been uploaded for this application.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      try {
+        await downloadApplicationDocument(application.id, application.proposalFileName);
+        toast({
+          title: "Download Started",
+          description: "The document download has started.",
+        });
+      } catch (error: any) {
+        toast({
+          title: "Download Failed",
+          description: error.message || "Failed to download the document.",
+          variant: "destructive"
+        });
+      }
+    };
+
     if (loading) {
       return (
         <div className="max-w-7xl mx-auto">
@@ -625,6 +651,9 @@ const Applications = () => {
                 <TableRow>
                   <TableHead>Proposal Title</TableHead>
                   <TableHead>Applicant</TableHead>
+                  <TableHead>Age</TableHead>
+                  <TableHead>First-time</TableHead>
+                  <TableHead>Document</TableHead>
                   <TableHead>Grant Type</TableHead>
                   <TableHead>Submission Date</TableHead>
                   <TableHead>Status</TableHead>
@@ -642,6 +671,33 @@ const Applications = () => {
                         {application.proposalTitle}
                       </TableCell>
                       <TableCell>{application.applicantName}</TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600">
+                          {application.biodata?.age ? `${application.biodata.age} yrs` : 'N/A'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {application.biodata ? (
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            application.biodata.firstTimeApplicant 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {application.biodata.firstTimeApplicant ? 'Yes' : 'No'}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          application.proposalFileName 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {application.proposalFileName ? 'Yes' : 'No'}
+                        </span>
+                      </TableCell>
                       <TableCell>Research Grant</TableCell>
                       <TableCell>
                         {format(new Date(application.submissionDate), 'MMM dd, yyyy')}
@@ -670,6 +726,17 @@ const Applications = () => {
                             <Eye className="h-4 w-4 mr-1" />
                             Review
                           </Button>
+                          {application.proposalFileName && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownloadDocument(application)}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              View Doc
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
@@ -739,6 +806,49 @@ const Applications = () => {
                     <div>
                       <span className="font-medium">Email:</span> {selectedApplication.email}
                     </div>
+                    {selectedApplication.biodata && (
+                      <>
+                        <div>
+                          <span className="font-medium">Age:</span> {selectedApplication.biodata.age} years old
+                        </div>
+                        <div>
+                          <span className="font-medium">First-time Applicant:</span>{' '}
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            selectedApplication.biodata.firstTimeApplicant 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {selectedApplication.biodata.firstTimeApplicant ? 'Yes' : 'No'}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    <div>
+                      <span className="font-medium">Document Uploaded:</span>{' '}
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        selectedApplication.proposalFileName 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedApplication.proposalFileName ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    {selectedApplication.proposalFileName && (
+                      <div className="space-y-2">
+                        <div>
+                          <span className="font-medium">File Name:</span> {selectedApplication.proposalFileName}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownloadDocument(selectedApplication)}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          View Document
+                        </Button>
+                      </div>
+                    )}
                     <div>
                       <span className="font-medium">Submission Date:</span>{' '}
                       {format(new Date(selectedApplication.submissionDate), 'MMM dd, yyyy')}
