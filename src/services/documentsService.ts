@@ -27,34 +27,26 @@ export interface DocumentFolder {
   accessRoles: string[];
 }
 
+import { apiClient } from '../lib/api';
+
 class DocumentsService {
   private documents: Document[] = [];
-  private readonly STORAGE_KEY = 'documents';
 
   constructor() {
     this.loadDocuments();
   }
 
   private loadDocuments(): void {
-    try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
-      this.documents = stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error('Failed to load documents:', error);
-      this.documents = [];
-    }
+    // TO DO: implement API call to load documents
   }
 
-  private saveDocuments(): void {
+  async getAllDocuments(): Promise<Document[]> {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.documents));
+      return await apiClient.get<Document[]>('/documents');
     } catch (error) {
-      console.error('Failed to save documents:', error);
+      console.error('Error fetching documents:', error);
+      return [];
     }
-  }
-
-  getAllDocuments(): Document[] {
-    return [...this.documents];
   }
 
   getDocumentsByUser(email: string): Document[] {
@@ -63,96 +55,133 @@ class DocumentsService {
     );
   }
 
-  getDocumentsByFolder(folder: DocumentFolder['name']): Document[] {
-    return this.documents.filter(doc => doc.folder === folder);
+  async getDocumentsByFolder(folder: DocumentFolder['name']): Promise<Document[]> {
+    try {
+      return await apiClient.get<Document[]>(`/documents?folder=${folder}`);
+    } catch (error) {
+      console.error('Error fetching documents by folder:', error);
+      return [];
+    }
   }
 
   getDocumentById(id: string): Document | undefined {
     return this.documents.find(doc => doc.id === id);
   }
 
-  searchDocuments(query: string, userEmail?: string, isRestrictedUser = false): Document[] {
-    let docs = isRestrictedUser ? this.getDocumentsByUser(userEmail!) : this.documents;
-    
-    if (!query.trim()) return docs;
-    
-    const searchTerm = query.toLowerCase();
-    return docs.filter(doc => 
-      doc.name.toLowerCase().includes(searchTerm) ||
-      doc.versions.some(version => 
-        version.fileName.toLowerCase().includes(searchTerm)
-      ) ||
-      doc.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
-    );
+  async searchDocuments(query: string, userEmail?: string, isRestrictedUser = false): Promise<Document[]> {
+    try {
+      return await apiClient.get<Document[]>(`/documents?search=${encodeURIComponent(query)}`);
+    } catch (error) {
+      console.error('Error searching documents:', error);
+      return [];
+    }
   }
 
-  uploadDocument(
+  async uploadDocument(
     name: string,
     folder: DocumentFolder['name'],
-    fileName: string,
-    uploadedBy: string,
-    fileSize: string,
+    file: File,
     notes?: string
-  ): Document {
-    const now = new Date().toISOString();
-    const documentId = `doc-${Date.now()}`;
-    
-    const firstVersion: DocumentVersion = {
-      id: `${documentId}-v1`,
-      versionNumber: 1,
-      fileName,
-      uploadedBy,
-      uploadedAt: now,
-      fileSize,
-      notes
-    };
+  ): Promise<{ id: string; message: string; filename: string; size: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('folder', folder);
+      formData.append('file', file);
+      if (notes) {
+        formData.append('notes', notes);
+      }
 
-    const newDocument: Document = {
-      id: documentId,
-      name,
-      folder,
-      currentVersion: 1,
-      versions: [firstVersion],
-      createdBy: uploadedBy,
-      createdAt: now,
-      lastModified: now,
-      tags: []
-    };
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/documents/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: formData
+      });
 
-    this.documents.push(newDocument);
-    this.saveDocuments();
-    return newDocument;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Upload failed');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      throw error;
+    }
   }
 
-  uploadNewVersion(
+  async uploadNewVersion(
     documentId: string,
-    fileName: string,
-    uploadedBy: string,
-    fileSize: string,
+    file: File,
     notes?: string
-  ): boolean {
-    const document = this.documents.find(doc => doc.id === documentId);
-    if (!document) return false;
+  ): Promise<{ message: string; filename: string; size: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (notes) {
+        formData.append('notes', notes);
+      }
 
-    const now = new Date().toISOString();
-    const newVersionNumber = document.currentVersion + 1;
-    
-    const newVersion: DocumentVersion = {
-      id: `${documentId}-v${newVersionNumber}`,
-      versionNumber: newVersionNumber,
-      fileName,
-      uploadedBy,
-      uploadedAt: now,
-      fileSize,
-      notes
-    };
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/documents/${documentId}/upload-version`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: formData
+      });
 
-    document.versions.push(newVersion);
-    document.currentVersion = newVersionNumber;
-    document.lastModified = now;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Version upload failed');
+      }
 
-    this.saveDocuments();
-    return true;
+      return await response.json();
+    } catch (error) {
+      console.error('Error uploading new version:', error);
+      throw error;
+    }
+  }
+
+  async downloadDocument(documentId: string): Promise<void> {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/documents/${documentId}/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Download failed');
+      }
+
+      // Get filename from Content-Disposition header or use a default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'document';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      throw error;
+    }
   }
 
   deleteDocument(documentId: string): boolean {

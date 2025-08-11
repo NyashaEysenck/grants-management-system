@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { ArrowLeft, Save, Send, Upload, User } from 'lucide-react';
 import { getCallById } from '../services/grantCallsService';
 import { saveBiodata, getBiodata, type ResearcherBiodata } from '../services/applicationsService';
+import { documentsService } from '../services/documentsService';
 import { useToast } from '@/hooks/use-toast';
 
 interface ApplicationFormData {
@@ -122,27 +123,54 @@ const GrantApplicationForm = () => {
     }
   };
 
-  const onSubmit = (data: ApplicationFormData) => {
-    // Save biodata for future use
-    saveBiodataData();
-    
-    console.log('Application submitted:', data);
-    
-    // Clear draft from localStorage after successful submission
-    if (id) {
-      const draftKey = `grant-application-draft-${id}`;
-      localStorage.removeItem(draftKey);
+  const onSubmit = async (data: ApplicationFormData) => {
+    if (!selectedFile) {
+      toast({
+        title: "Error",
+        description: "Please select a proposal document to upload.",
+        variant: "destructive",
+      });
+      return;
     }
-    
-    toast({
-      title: "Application Submitted",
-      description: "Your grant application has been successfully submitted!",
-    });
-    
-    // Navigate back to grant details after submission
-    setTimeout(() => {
-      navigate(`/grant-call/${id}`);
-    }, 2000);
+
+    try {
+      // Save biodata for future use
+      saveBiodataData();
+      
+      // Upload the document
+      const uploadResult = await documentsService.uploadDocument(
+        data.proposalTitle || 'Grant Application Document',
+        'Applications',
+        selectedFile,
+        `Grant application for ${grantCall?.title || 'grant call'}`
+      );
+      
+      console.log('Application submitted:', {
+        ...data,
+        documentId: uploadResult.id,
+        documentFilename: uploadResult.filename
+      });
+      
+      toast({
+        title: "Application Submitted",
+        description: "Your grant application and document have been submitted successfully.",
+      });
+      
+      // Clear draft after successful submission
+      if (id) {
+        const draftKey = `grant-application-draft-${id}`;
+        localStorage.removeItem(draftKey);
+      }
+      
+      navigate('/applications');
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      toast({
+        title: "Submission Failed",
+        description: error instanceof Error ? error.message : "Failed to submit application. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleBack = () => {

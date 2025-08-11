@@ -13,7 +13,7 @@ import GrantCallDetails from "./pages/GrantCallDetails";
 import GrantApplicationForm from "./components/GrantApplicationForm";
 import Applications from "./pages/Applications";
 import Projects from "./pages/Projects";
-import Documents from "./pages/Documents";
+import DocumentsManagement from "./pages/DocumentsManagement";
 import CallManagement from "./pages/CallManagement";
 import UserManagement from "./pages/UserManagement";
 import SystemConfig from "./pages/SystemConfig";
@@ -93,7 +93,7 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Layout>
-                      <Documents />
+                      <DocumentsManagement />
                     </Layout>
                   </ProtectedRoute>
                 } 
