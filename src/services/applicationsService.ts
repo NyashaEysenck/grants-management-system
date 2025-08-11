@@ -1,5 +1,6 @@
 import applicationsData from '../data/applications.json';
 import { DataStorage } from '../utils/dataStorage';
+import { apiClient } from '../lib/api';
 
 export interface ResearcherBiodata {
   name: string;
@@ -128,65 +129,71 @@ export const submitApplication = async (applicationData: {
   proposalFileName?: string;
 }): Promise<Application> => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/applications`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        grantId: applicationData.grantId,
-        applicantName: applicationData.applicantName,
-        email: applicationData.email,
-        proposalTitle: applicationData.proposalTitle,
-        institution: applicationData.institution || '',
-        department: applicationData.department || '',
-        projectSummary: applicationData.projectSummary || '',
-        objectives: applicationData.objectives || '',
-        methodology: applicationData.methodology || '',
-        expectedOutcomes: applicationData.expectedOutcomes || '',
-        budgetAmount: applicationData.budgetAmount || 0,
-        budgetJustification: applicationData.budgetJustification || '',
-        timeline: applicationData.timeline || '',
-        biodata: applicationData.biodata,
-        proposalFileName: applicationData.proposalFileName
-      })
+    console.log('Submitting application with data:', applicationData);
+    
+    // Use API client for consistent authentication and error handling
+    const submittedApp = await apiClient.post('/applications', {
+      grantId: applicationData.grantId,
+      applicantName: applicationData.applicantName,
+      email: applicationData.email,
+      proposalTitle: applicationData.proposalTitle,
+      institution: applicationData.institution || 'Not specified',
+      department: applicationData.department || 'Not specified',
+      projectSummary: applicationData.projectSummary || '',
+      objectives: applicationData.objectives || '',
+      methodology: applicationData.methodology || '',
+      expectedOutcomes: applicationData.expectedOutcomes || '',
+      budgetAmount: applicationData.budgetAmount || 0,
+      budgetJustification: applicationData.budgetJustification || '',
+      timeline: applicationData.timeline || '',
+      biodata: applicationData.biodata,
+      proposalFileName: applicationData.proposalFileName
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Failed to submit application');
-    }
-
-    const submittedApp = await response.json();
+    
+    console.log('Backend response:', submittedApp);
     
     // Convert backend response to frontend Application interface
     const application: Application = {
       id: submittedApp.id,
-      grantId: submittedApp.grantId,
-      applicantName: submittedApp.applicantName,
+      grantId: submittedApp.grantId || submittedApp.grant_id,
+      applicantName: submittedApp.applicantName || submittedApp.researcher_name,
       email: submittedApp.email,
-      proposalTitle: submittedApp.proposalTitle,
+      proposalTitle: submittedApp.proposalTitle || submittedApp.title,
       status: submittedApp.status || 'submitted',
-      submissionDate: submittedApp.submissionDate || new Date().toISOString(),
+      submissionDate: submittedApp.submissionDate || submittedApp.submitted_at || new Date().toISOString(),
       reviewComments: submittedApp.reviewComments || '',
       biodata: submittedApp.biodata,
       deadline: submittedApp.deadline,
-      isEditable: submittedApp.isEditable,
+      isEditable: submittedApp.isEditable || false,
       assignedReviewers: submittedApp.assignedReviewers || [],
       reviewerFeedback: submittedApp.reviewerFeedback || [],
       signOffApprovals: submittedApp.signOffApprovals || [],
       awardAmount: submittedApp.awardAmount,
       contractFileName: submittedApp.contractFileName,
-      awardLetterGenerated: submittedApp.awardLetterGenerated,
+      awardLetterGenerated: submittedApp.awardLetterGenerated || false,
       revisionCount: submittedApp.revisionCount || 0,
       originalSubmissionDate: submittedApp.originalSubmissionDate,
       proposalFileName: submittedApp.proposalFileName
     };
 
+    console.log('Converted application:', application);
     return application;
   } catch (error) {
     console.error('Error submitting application:', error);
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('403')) {
+        throw new Error('You do not have permission to submit this application');
+      } else if (error.message.includes('401')) {
+        throw new Error('Your session has expired. Please log in again');
+      } else if (error.message.includes('400')) {
+        throw new Error('Invalid application data. Please check all required fields');
+      } else if (error.message.includes('Network')) {
+        throw new Error('Network error. Please check your connection and try again');
+      }
+    }
+    
     throw error;
   }
 };

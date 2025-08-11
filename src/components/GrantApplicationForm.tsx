@@ -24,6 +24,16 @@ interface ApplicationFormData {
   grantType: string;
   proposalTitle: string;
   proposalFile: string;
+  // Additional application fields
+  institution?: string;
+  department?: string;
+  projectSummary?: string;
+  objectives?: string;
+  methodology?: string;
+  expectedOutcomes?: string;
+  budgetAmount?: number;
+  budgetJustification?: string;
+  timeline?: string;
 }
 
 const GrantApplicationForm = () => {
@@ -31,6 +41,7 @@ const GrantApplicationForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const grantCall = id ? getCallById(id) : null;
   
@@ -124,51 +135,104 @@ const GrantApplicationForm = () => {
   };
 
   const onSubmit = async (data: ApplicationFormData) => {
+    console.log('Form submission started with data:', data);
+    setIsSubmitting(true);
+    
+    // Validate required fields
+    if (!data.name?.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter your full name.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!data.email?.trim()) {
+      toast({
+        title: "Validation Error", 
+        description: "Please enter your email address.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!data.proposalTitle?.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a proposal title.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     if (!selectedFile) {
       toast({
-        title: "Error",
+        title: "Document Required",
         description: "Please select a proposal document to upload.",
         variant: "destructive",
       });
+      setIsSubmitting(false);
       return;
     }
 
     if (!id || !grantCall) {
       toast({
-        title: "Error",
-        description: "Grant call information is missing.",
+        title: "System Error",
+        description: "Grant call information is missing. Please try refreshing the page.",
         variant: "destructive",
       });
+      setIsSubmitting(false);
       return;
     }
 
+    // Show loading toast
+    toast({
+      title: "Submitting Application",
+      description: "Please wait while we process your application...",
+    });
+
     try {
+      console.log('Starting application submission process...');
+      
       // Save biodata for future use
       saveBiodataData();
       
       // Step 1: Upload the document first
-      const uploadResult = await documentsService.uploadDocument(
-        data.proposalTitle || 'Grant Application Document',
-        'Applications',
-        selectedFile,
-        `Grant application for ${grantCall.title}`
-      );
+      console.log('Uploading document...');
+      let uploadResult;
+      try {
+        uploadResult = await documentsService.uploadDocument(
+          data.proposalTitle || 'Grant Application Document',
+          'Applications',
+          selectedFile,
+          `Grant application for ${grantCall.title}`
+        );
+        console.log('Document uploaded successfully:', uploadResult);
+      } catch (uploadError) {
+        console.error('Document upload failed:', uploadError);
+        throw new Error(`Document upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+      }
       
       // Step 2: Submit the complete application to backend
+      console.log('Submitting application data...');
       const applicationData = {
         grantId: id,
         applicantName: data.name,
         email: data.email,
         proposalTitle: data.proposalTitle,
-        institution: 'University', // Default or could be added to form
-        department: 'Research Department', // Default or could be added to form
-        projectSummary: grantCall.scope, // Use grant call scope as summary
-        objectives: `Research objectives for ${data.proposalTitle}`,
-        methodology: 'Research methodology to be detailed',
-        expectedOutcomes: 'Expected research outcomes',
-        budgetAmount: 0, // Could be added to form later
-        budgetJustification: 'Budget justification to be provided',
-        timeline: '12 months', // Default timeline
+        institution: data.institution || 'Not specified',
+        department: data.department || 'Not specified',
+        projectSummary: data.projectSummary || grantCall.scope,
+        objectives: data.objectives || `Research objectives for ${data.proposalTitle}`,
+        methodology: data.methodology || 'Research methodology to be detailed',
+        expectedOutcomes: data.expectedOutcomes || 'Expected research outcomes',
+        budgetAmount: parseFloat(data.budgetAmount?.toString() || '0'),
+        budgetJustification: data.budgetJustification || 'Budget justification to be provided',
+        timeline: data.timeline || '12 months',
         biodata: {
           name: data.name,
           age: data.age,
@@ -178,33 +242,71 @@ const GrantApplicationForm = () => {
         proposalFileName: uploadResult.filename
       };
 
-      const submittedApplication = await submitApplication(applicationData);
+      let submittedApplication;
+      try {
+        submittedApplication = await submitApplication(applicationData);
+        console.log('Application submitted successfully:', {
+          applicationId: submittedApplication.id,
+          documentId: uploadResult.id,
+          documentFilename: uploadResult.filename
+        });
+      } catch (submissionError) {
+        console.error('Application submission failed:', submissionError);
+        throw new Error(`Application submission failed: ${submissionError instanceof Error ? submissionError.message : 'Unknown error'}`);
+      }
       
-      console.log('Application submitted successfully:', {
-        applicationId: submittedApplication.id,
-        documentId: uploadResult.id,
-        documentFilename: uploadResult.filename
-      });
-      
+      // Success feedback
       toast({
-        title: "Application Submitted",
-        description: "Your grant application and document have been submitted successfully.",
+        title: "✅ Application Submitted Successfully!",
+        description: `Your application "${data.proposalTitle}" has been submitted and is now under review.`,
       });
       
       // Clear draft after successful submission
       if (id) {
         const draftKey = `grant-application-draft-${id}`;
         localStorage.removeItem(draftKey);
+        console.log('Draft cleared from localStorage');
       }
       
-      navigate('/applications');
+      // Navigate to applications page after a short delay to let user see the success message
+      setTimeout(() => {
+        navigate('/applications');
+      }, 2000);
+      
     } catch (error) {
-      console.error('Error submitting application:', error);
+      console.error('Error during application submission process:', error);
+      
+      // Provide specific error messages based on error type
+      let errorMessage = "Failed to submit application. Please try again.";
+      let errorTitle = "Submission Failed";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Document upload failed')) {
+          errorTitle = "Document Upload Failed";
+          errorMessage = error.message + " Please check your file and try again.";
+        } else if (error.message.includes('Application submission failed')) {
+          errorTitle = "Application Submission Failed";
+          errorMessage = error.message + " Please check your connection and try again.";
+        } else if (error.message.includes('Network')) {
+          errorTitle = "Network Error";
+          errorMessage = "Unable to connect to the server. Please check your internet connection and try again.";
+        } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+          errorTitle = "Permission Error";
+          errorMessage = "You don't have permission to submit this application. Please check your login status.";
+        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          errorTitle = "Authentication Error";
+          errorMessage = "Your session has expired. Please log in again and try submitting.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
-        title: "Submission Failed",
-        description: error instanceof Error ? error.message : "Failed to submit application. Please try again.",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
+      setIsSubmitting(false);
     }
   };
 
@@ -412,10 +514,20 @@ const GrantApplicationForm = () => {
 
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="flex items-center gap-2"
             >
-              <Send className="h-4 w-4" />
-              Submit Application
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Submit Application
+                </>
+              )}
             </Button>
           </div>
         </form>
