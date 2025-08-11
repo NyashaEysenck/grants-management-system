@@ -12,6 +12,7 @@ import { ArrowLeft, Save, Send, Upload, User } from 'lucide-react';
 import { getCallById } from '../services/grantCallsService';
 import { saveBiodata, getBiodata, submitApplication, type ResearcherBiodata } from '../services/applicationsService';
 import { documentsService } from '../services/documentsService';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface ApplicationFormData {
@@ -39,6 +40,7 @@ interface ApplicationFormData {
 const GrantApplicationForm = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -50,15 +52,23 @@ const GrantApplicationForm = () => {
   
   const form = useForm<ApplicationFormData>({
     defaultValues: {
-      name: '',
+      name: user?.name || '',
       age: 0,
-      email: '',
+      email: user?.email || '',
       firstTimeApplicant: false,
       grantType: grantCall?.type || '',
       proposalTitle: '',
       proposalFile: '',
     },
   });
+
+  // Update form values when user data becomes available
+  useEffect(() => {
+    if (user) {
+      form.setValue('name', user.name || '');
+      form.setValue('email', user.email || '');
+    }
+  }, [user, form]);
 
   // Load draft from localStorage on component mount
   useEffect(() => {
@@ -68,13 +78,19 @@ const GrantApplicationForm = () => {
       if (savedDraft) {
         try {
           const draftData = JSON.parse(savedDraft);
-          form.reset(draftData);
+          // Don't override user name and email from draft
+          const { name, email, ...otherData } = draftData;
+          form.reset({
+            ...otherData,
+            name: user?.name || name,
+            email: user?.email || email,
+          });
         } catch (error) {
           console.error('Error loading draft:', error);
         }
       }
     }
-  }, [id, form]);
+  }, [id, form, user]);
 
   // Load biodata when email changes
   useEffect(() => {
@@ -429,10 +445,17 @@ const GrantApplicationForm = () => {
                   }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email Address *</FormLabel>
+                      <FormLabel>Email Address * (Auto-filled)</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="Enter your email" {...field} />
+                        <Input 
+                          type="email" 
+                          placeholder="Enter your email" 
+                          disabled
+                          className="bg-gray-50 text-gray-700"
+                          {...field} 
+                        />
                       </FormControl>
+                      <p className="text-xs text-gray-500 mt-1">This field is automatically filled from your account</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -444,10 +467,16 @@ const GrantApplicationForm = () => {
                   rules={{ required: "Name is required" }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name *</FormLabel>
+                      <FormLabel>Full Name * (Auto-filled)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your full name" {...field} />
+                        <Input 
+                          placeholder="Enter your full name" 
+                          disabled
+                          className="bg-gray-50 text-gray-700"
+                          {...field} 
+                        />
                       </FormControl>
+                      <p className="text-xs text-gray-500 mt-1">This field is automatically filled from your account</p>
                       <FormMessage />
                     </FormItem>
                   )}
