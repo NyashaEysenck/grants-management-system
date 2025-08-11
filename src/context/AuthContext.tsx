@@ -1,7 +1,19 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService, User } from '../services/authService';
+import { apiClient } from '../lib/api';
 
+interface User {
+  email: string;
+  role: string;
+  name: string;
+  id?: string;
+}
 
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -25,42 +37,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing authentication on mount
+  // Check for existing token on mount
   useEffect(() => {
-    const initializeAuth = async () => {
+    const token = localStorage.getItem('auth_token');
+    const userData = localStorage.getItem('user_data');
+    
+    if (token && userData) {
       try {
-        if (authService.isAuthenticated()) {
-          const userData = authService.getUserData();
-          if (userData) {
-            setUser(userData);
-            // Optionally refresh user data from server
-            try {
-              const currentUser = await authService.getCurrentUser();
-              setUser(currentUser);
-            } catch (error) {
-              console.error('Failed to refresh user data:', error);
-              // Keep using cached user data
-            }
-          }
-        }
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
       } catch (error) {
-        console.error('Auth initialization error:', error);
-        authService.clearTokens();
-      } finally {
-        setLoading(false);
+        console.error('Error parsing stored user data:', error);
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
       }
-    };
-
-    initializeAuth();
+    }
+    setLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
       
-      const response = await authService.login({ email, password });
-      
-      if (response.user) {
+      // Create form data for OAuth2 login
+      const formData = new FormData();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      const response = await apiClient.post<LoginResponse>('/auth/login', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+
+      if (response.access_token && response.user) {
+        // Store token and user data
+        localStorage.setItem('auth_token', response.access_token);
+        localStorage.setItem('user_data', JSON.stringify(response.user));
+        
         setUser(response.user);
         return true;
       }
@@ -73,14 +87,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      setUser(null);
-    }
+  const logout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
+    setUser(null);
   };
 
   const value = {
