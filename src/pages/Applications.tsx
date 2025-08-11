@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   getAllApplications, 
@@ -132,7 +132,7 @@ const Applications = () => {
     };
 
     const handleContractUpload = (applicationId: string) => {
-      const success = submitContract(applicationId);
+      const success = submitContract(applicationId, 'contract.pdf');
       if (success) {
         toast({
           title: "Contract Submitted",
@@ -144,14 +144,6 @@ const Applications = () => {
           description: "Failed to submit contract. Please try again.",
           variant: "destructive"
         });
-        const success = submitContract(applicationId, fileName);
-        if (success) {
-          toast({
-            title: "Contract Uploaded",
-            description: "Your signed contract has been submitted for review.",
-          });
-          // Force component re-render by getting fresh data
-        }
       }
     };
 
