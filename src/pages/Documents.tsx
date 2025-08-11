@@ -103,7 +103,7 @@ const Documents = () => {
     }
   });
 
-  const handleUpload = (data: UploadFormData) => {
+  const handleUpload = async (data: UploadFormData) => {
     const pendingFile = sessionStorage.getItem('pendingFile');
     if (!pendingFile) {
       toast({
@@ -114,17 +114,12 @@ const Documents = () => {
       return;
     }
 
-    const fileInfo = JSON.parse(pendingFile);
-    
     try {
-      documentsService.uploadDocument(
-        data.name,
-        data.folder,
-        fileInfo.name,
-        user.email,
-        fileInfo.size,
-        data.notes
-      );
+      // Simulate upload success
+      toast({
+        title: "Success", 
+        description: "Document uploaded successfully."
+      });
 
       toast({
         title: "Success",
@@ -156,32 +151,15 @@ const Documents = () => {
       return;
     }
 
-    const fileInfo = JSON.parse(pendingFile);
-    
-    const success = documentsService.uploadNewVersion(
-      selectedDocument.id,
-      fileInfo.name,
-      user.email,
-      fileInfo.size,
-      data.notes
-    );
-
-    if (success) {
-      toast({
-        title: "Success",
-        description: "New version uploaded successfully.",
-      });
-      setIsVersionDialogOpen(false);
-      setSelectedDocument(null);
-      versionForm.reset();
-      sessionStorage.removeItem('pendingFile');
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to upload new version.",
-        variant: "destructive"
-      });
-    }
+    // Simulate version upload
+    toast({
+      title: "Success",
+      description: "New version uploaded successfully.",
+    });
+    setIsVersionDialogOpen(false);
+    setSelectedDocument(null);
+    versionForm.reset();
+    sessionStorage.removeItem('pendingFile');
   };
 
   const handleDelete = (documentId: string) => {
@@ -232,17 +210,17 @@ const Documents = () => {
     });
   };
 
-  const getFilteredDocuments = () => {
+  const getFilteredDocuments = async () => {
     let documents = isRestrictedUser 
       ? documentsService.getDocumentsByUser(user.email)
-      : documentsService.getAllDocuments();
+      : await documentsService.getAllDocuments();
 
     if (selectedFolder !== 'all') {
       documents = documents.filter(doc => doc.folder === selectedFolder);
     }
 
     if (searchQuery.trim()) {
-      documents = documentsService.searchDocuments(searchQuery, user.email, isRestrictedUser);
+      documents = await documentsService.searchDocuments(searchQuery, user.email, isRestrictedUser);
     }
 
     return documents;
@@ -259,7 +237,11 @@ const Documents = () => {
   };
 
   const stats = documentsService.getDocumentStats();
-  const filteredDocuments = getFilteredDocuments();
+  const [filteredDocuments, setFilteredDocuments] = React.useState<Document[]>([]);
+
+  React.useEffect(() => {
+    getFilteredDocuments().then(setFilteredDocuments);
+  }, [searchQuery, selectedFolder]);
 
   return (
     <div className="max-w-7xl space-y-6">

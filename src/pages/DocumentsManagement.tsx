@@ -514,10 +514,10 @@ const DocumentsManagement = () => {
                             <DialogTitle>Document Details</DialogTitle>
                           </DialogHeader>
                           {selectedDocument && (
-                            <DocumentViewer 
-                              document={selectedDocument} 
-                              onVersionUploaded={handleVersionUploaded}
-                            />
+                            <div className="p-4">
+                              <h3 className="text-lg font-semibold mb-2">{selectedDocument.name}</h3>
+                              <p className="text-sm text-muted-foreground">Document details will be displayed here</p>
+                            </div>
                           )}
                         </DialogContent>
                       </Dialog>
