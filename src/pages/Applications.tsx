@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   getAllApplications, 
@@ -20,13 +20,14 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
-import { Eye, Filter, UserPlus, RotateCcw, Trash2, Edit, Send, CheckCircle, FileText, MessageSquare } from 'lucide-react';
+import { Eye, Filter, UserPlus, RotateCcw, Trash2, Edit, Send, CheckCircle, FileText, MessageSquare, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ReviewerAssignmentDialog from '../components/ReviewerAssignmentDialog';
 import SignOffInitiationDialog from '../components/SignOffInitiationDialog';
@@ -43,6 +44,7 @@ interface ReviewFormData {
 const Applications = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
@@ -68,9 +70,32 @@ const Applications = () => {
     );
   }
 
-  // For researchers, show their applications
+  // For researchers, show their applications with search and filter
   if (user.role.toLowerCase() === 'researcher') {
     const userApplications = getApplicationsByUser(user.email);
+
+    // Get unique statuses for filter options
+    const availableStatuses = useMemo(() => {
+      const statuses = [...new Set(userApplications.map(app => app.status))];
+      return statuses.sort();
+    }, [userApplications]);
+
+    // Filter and search applications
+    const filteredApplications = useMemo(() => {
+      return userApplications.filter(app => {
+        // Search filter
+        const matchesSearch = searchQuery === '' || 
+          app.proposalTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          app.applicantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          app.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          app.status.toLowerCase().includes(searchQuery.toLowerCase());
+
+        // Status filter
+        const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
+
+        return matchesSearch && matchesStatus;
+      });
+    }, [userApplications, searchQuery, statusFilter]);
     
     const handleWithdrawApplication = (applicationId: string) => {
       const success = withdrawApplication(applicationId);
@@ -107,8 +132,18 @@ const Applications = () => {
     };
 
     const handleContractUpload = (applicationId: string) => {
-      const fileName = prompt('Enter contract filename (for demo):');
-      if (fileName) {
+      const success = submitContract(applicationId);
+      if (success) {
+        toast({
+          title: "Contract Submitted",
+          description: "Your contract has been successfully submitted.",
+        });
+      } else {
+        toast({
+          title: "Submission Failed",
+          description: "Failed to submit contract. Please try again.",
+          variant: "destructive"
+        });
         const success = submitContract(applicationId, fileName);
         if (success) {
           toast({
@@ -129,9 +164,14 @@ const Applications = () => {
       setSelectedApplication(application);
       setIsUpdateDialogOpen(true);
     };
+
+    const clearFilters = () => {
+      setSearchQuery('');
+      setStatusFilter('all');
+    };
     
     return (
-      <div className="max-w-7xl">
+      <div className="max-w-7xl space-y-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">My Applications</h1>
           <p className="text-gray-600 mt-2">Track the status of your grant applications</p>
@@ -145,24 +185,94 @@ const Applications = () => {
           </Card>
         ) : (
           <div className="space-y-6">
+            {/* Search and Filter Section */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col lg:flex-row gap-4">
+                  {/* Search Input */}
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search by proposal title, applicant name, email, or status..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="flex gap-3">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-48">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="All Statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        {availableStatuses.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status.replace('_', ' ').toUpperCase()}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {(searchQuery || statusFilter !== 'all') && (
+                      <Button variant="outline" onClick={clearFilters}>
+                        Clear Filters
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Results Summary */}
+                <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+                  <span>
+                    Showing {filteredApplications.length} of {userApplications.length} applications
+                  </span>
+                  {(searchQuery || statusFilter !== 'all') && (
+                    <span className="text-blue-600">
+                      Filters active
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Your Grant Applications</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Proposal Title</TableHead>
-                      <TableHead>Grant Type</TableHead>
-                      <TableHead>Submission Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Revisions</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {userApplications.map((application) => {
+                {filteredApplications.length === 0 ? (
+                  <div className="text-center py-8">
+                    {userApplications.length === 0 ? (
+                      <p className="text-gray-500">You haven't submitted any applications yet.</p>
+                    ) : (
+                      <div>
+                        <p className="text-gray-500 mb-2">No applications match your search criteria.</p>
+                        <Button variant="outline" onClick={clearFilters}>
+                          Clear Filters
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Proposal Title</TableHead>
+                        <TableHead>Grant Type</TableHead>
+                        <TableHead>Submission Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Revisions</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredApplications.map((application) => {
                       const feedback = getReviewerFeedback(application.id);
                       const revisionHistory = getApplicationRevisionHistory(application.id);
                       
@@ -235,13 +345,14 @@ const Applications = () => {
                         </TableRow>
                       );
                     })}
-                  </TableBody>
-                </Table>
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
 
             {/* Sign-off Status Cards */}
-            {userApplications
+            {filteredApplications
               .filter(app => app.status === 'awaiting_signoff' || app.status === 'signoff_complete' || app.status === 'contract_pending' || app.status === 'contract_received')
               .map(application => (
                 <SignOffStatusCard 
@@ -303,7 +414,23 @@ const Applications = () => {
 
   // For grants manager, show review interface
   if (user.role.toLowerCase() === 'grants manager') {
-    const allApplications = getAllApplications();
+    const [allApplications, setAllApplications] = useState<Application[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      const loadApplications = async () => {
+        try {
+          setLoading(true);
+          const applications = await getAllApplications();
+          setAllApplications(applications);
+        } catch (error) {
+          console.error('Error loading applications:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadApplications();
+    }, []);
     
     // Filter applications
     const filteredApplications = allApplications.filter(app => {
@@ -389,6 +516,17 @@ const Applications = () => {
       setSelectedApplication(application);
       setIsSignOffInitiationOpen(true);
     };
+
+    if (loading) {
+      return (
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading applications...</p>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="max-w-7xl space-y-6">

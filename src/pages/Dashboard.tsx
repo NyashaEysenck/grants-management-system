@@ -1,18 +1,23 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getOpenCalls, getAllCalls } from '../services/grantCallsService';
 import { getAllApplications } from '../services/applicationsService';
 import { getAllProjects } from '../services/projectsService';
-import { Calendar, Building, Tag, AlertTriangle, Users, FileText, Award, Clock, CheckCircle, DollarSign } from 'lucide-react';
+import { Calendar, Building, Tag, AlertTriangle, Users, FileText, Award, Clock, CheckCircle, DollarSign, Search, Filter } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [sponsorFilter, setSponsorFilter] = useState<string>('all');
   const isResearcher = user?.role.toLowerCase() === 'researcher';
   const isGrantsManager = user?.role.toLowerCase() === 'grants manager';
 
@@ -220,28 +225,146 @@ const Dashboard = () => {
     );
   }
 
-  // Researcher Dashboard (existing code)
+  // Researcher Dashboard with search and filter
   if (isResearcher) {
     const openCalls = getOpenCalls();
+
+    // Get unique types and sponsors for filter options
+    const availableTypes = useMemo(() => {
+      const types = [...new Set(openCalls.map(call => call.type))];
+      return types.sort();
+    }, [openCalls]);
+
+    const availableSponsors = useMemo(() => {
+      const sponsors = [...new Set(openCalls.map(call => call.sponsor))];
+      return sponsors.sort();
+    }, [openCalls]);
+
+    // Filter and search grant calls
+    const filteredCalls = useMemo(() => {
+      return openCalls.filter(call => {
+        // Search filter
+        const matchesSearch = searchQuery === '' || 
+          call.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          call.scope.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          call.sponsor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          call.type.toLowerCase().includes(searchQuery.toLowerCase());
+
+        // Type filter
+        const matchesType = typeFilter === 'all' || call.type === typeFilter;
+
+        // Sponsor filter
+        const matchesSponsor = sponsorFilter === 'all' || call.sponsor === sponsorFilter;
+
+        return matchesSearch && matchesType && matchesSponsor;
+      });
+    }, [openCalls, searchQuery, typeFilter, sponsorFilter]);
 
     const handleViewDetails = (callId: string) => {
       navigate(`/grant-call/${callId}`);
     };
 
+    const clearFilters = () => {
+      setSearchQuery('');
+      setTypeFilter('all');
+      setSponsorFilter('all');
+    };
+
     return (
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Available Grant Calls</h1>
           <p className="text-gray-600">Discover funding opportunities for your research projects</p>
         </div>
 
-        {openCalls.length === 0 ? (
+        {/* Search and Filter Section */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Search Input */}
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search by title, scope, sponsor, or type..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="flex gap-3">
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-48">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {availableTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={sponsorFilter} onValueChange={setSponsorFilter}>
+                  <SelectTrigger className="w-48">
+                    <Building className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="All Sponsors" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sponsors</SelectItem>
+                    {availableSponsors.map((sponsor) => (
+                      <SelectItem key={sponsor} value={sponsor}>
+                        {sponsor}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {(searchQuery || typeFilter !== 'all' || sponsorFilter !== 'all') && (
+                  <Button variant="outline" onClick={clearFilters}>
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Results Summary */}
+            <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+              <span>
+                Showing {filteredCalls.length} of {openCalls.length} grant calls
+              </span>
+              {(searchQuery || typeFilter !== 'all' || sponsorFilter !== 'all') && (
+                <span className="text-blue-600">
+                  Filters active
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Grant Calls Grid */}
+        {filteredCalls.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No open grant calls available at the moment.</p>
+            {openCalls.length === 0 ? (
+              <p className="text-gray-500 text-lg">No open grant calls available at the moment.</p>
+            ) : (
+              <div>
+                <p className="text-gray-500 text-lg mb-2">No grant calls match your search criteria.</p>
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {openCalls.map((call) => (
+            {filteredCalls.map((call) => (
               <Card key={call.id} className="hover:shadow-lg transition-shadow duration-200">
                 <CardHeader>
                   <div className="flex items-start justify-between">

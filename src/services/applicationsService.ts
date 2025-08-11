@@ -61,12 +61,134 @@ const typedApplicationsData = applicationsData as { applications: Application[] 
 // Initialize persistent storage with fallback to JSON data
 let applicationsCache: Application[] = DataStorage.initializeFromJSON('applications', typedApplicationsData.applications);
 
-export const getAllApplications = (): Application[] => {
-  return [...applicationsCache];
+export const getAllApplications = async (): Promise<Application[]> => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/applications`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch applications');
+    }
+
+    const applications = await response.json();
+    return applications.map((app: any) => ({
+      id: app.id,
+      grantId: app.grantId,
+      applicantName: app.applicantName,
+      email: app.email,
+      proposalTitle: app.proposalTitle,
+      status: app.status,
+      submissionDate: app.submissionDate,
+      reviewComments: app.reviewComments || '',
+      biodata: app.biodata,
+      deadline: app.deadline,
+      isEditable: app.isEditable,
+      assignedReviewers: app.assignedReviewers || [],
+      reviewerFeedback: app.reviewerFeedback || [],
+      signOffApprovals: app.signOffApprovals || [],
+      awardAmount: app.awardAmount,
+      contractFileName: app.contractFileName,
+      awardLetterGenerated: app.awardLetterGenerated,
+      revisionCount: app.revisionCount || 0,
+      originalSubmissionDate: app.originalSubmissionDate,
+      proposalFileName: app.proposalFileName
+    }));
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    // Fallback to cached data for development
+    return [...applicationsCache];
+  }
 };
 
 export const getApplicationsByUser = (email: string): Application[] => {
   return applicationsCache.filter(app => app.email === email);
+};
+
+// Submit a new grant application
+export const submitApplication = async (applicationData: {
+  grantId: string;
+  applicantName: string;
+  email: string;
+  proposalTitle: string;
+  institution?: string;
+  department?: string;
+  projectSummary?: string;
+  objectives?: string;
+  methodology?: string;
+  expectedOutcomes?: string;
+  budgetAmount?: number;
+  budgetJustification?: string;
+  timeline?: string;
+  biodata?: ResearcherBiodata;
+  proposalFileName?: string;
+}): Promise<Application> => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/applications`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        grantId: applicationData.grantId,
+        applicantName: applicationData.applicantName,
+        email: applicationData.email,
+        proposalTitle: applicationData.proposalTitle,
+        institution: applicationData.institution || '',
+        department: applicationData.department || '',
+        projectSummary: applicationData.projectSummary || '',
+        objectives: applicationData.objectives || '',
+        methodology: applicationData.methodology || '',
+        expectedOutcomes: applicationData.expectedOutcomes || '',
+        budgetAmount: applicationData.budgetAmount || 0,
+        budgetJustification: applicationData.budgetJustification || '',
+        timeline: applicationData.timeline || '',
+        biodata: applicationData.biodata,
+        proposalFileName: applicationData.proposalFileName
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to submit application');
+    }
+
+    const submittedApp = await response.json();
+    
+    // Convert backend response to frontend Application interface
+    const application: Application = {
+      id: submittedApp.id,
+      grantId: submittedApp.grantId,
+      applicantName: submittedApp.applicantName,
+      email: submittedApp.email,
+      proposalTitle: submittedApp.proposalTitle,
+      status: submittedApp.status || 'submitted',
+      submissionDate: submittedApp.submissionDate || new Date().toISOString(),
+      reviewComments: submittedApp.reviewComments || '',
+      biodata: submittedApp.biodata,
+      deadline: submittedApp.deadline,
+      isEditable: submittedApp.isEditable,
+      assignedReviewers: submittedApp.assignedReviewers || [],
+      reviewerFeedback: submittedApp.reviewerFeedback || [],
+      signOffApprovals: submittedApp.signOffApprovals || [],
+      awardAmount: submittedApp.awardAmount,
+      contractFileName: submittedApp.contractFileName,
+      awardLetterGenerated: submittedApp.awardLetterGenerated,
+      revisionCount: submittedApp.revisionCount || 0,
+      originalSubmissionDate: submittedApp.originalSubmissionDate,
+      proposalFileName: submittedApp.proposalFileName
+    };
+
+    return application;
+  } catch (error) {
+    console.error('Error submitting application:', error);
+    throw error;
+  }
 };
 
 export const getApplicationById = (id: string): Application | undefined => {

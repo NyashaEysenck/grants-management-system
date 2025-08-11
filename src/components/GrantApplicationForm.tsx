@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Save, Send, Upload, User } from 'lucide-react';
 import { getCallById } from '../services/grantCallsService';
-import { saveBiodata, getBiodata, type ResearcherBiodata } from '../services/applicationsService';
+import { saveBiodata, getBiodata, submitApplication, type ResearcherBiodata } from '../services/applicationsService';
 import { documentsService } from '../services/documentsService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -133,20 +133,55 @@ const GrantApplicationForm = () => {
       return;
     }
 
+    if (!id || !grantCall) {
+      toast({
+        title: "Error",
+        description: "Grant call information is missing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Save biodata for future use
       saveBiodataData();
       
-      // Upload the document
+      // Step 1: Upload the document first
       const uploadResult = await documentsService.uploadDocument(
         data.proposalTitle || 'Grant Application Document',
         'Applications',
         selectedFile,
-        `Grant application for ${grantCall?.title || 'grant call'}`
+        `Grant application for ${grantCall.title}`
       );
       
-      console.log('Application submitted:', {
-        ...data,
+      // Step 2: Submit the complete application to backend
+      const applicationData = {
+        grantId: id,
+        applicantName: data.name,
+        email: data.email,
+        proposalTitle: data.proposalTitle,
+        institution: 'University', // Default or could be added to form
+        department: 'Research Department', // Default or could be added to form
+        projectSummary: grantCall.scope, // Use grant call scope as summary
+        objectives: `Research objectives for ${data.proposalTitle}`,
+        methodology: 'Research methodology to be detailed',
+        expectedOutcomes: 'Expected research outcomes',
+        budgetAmount: 0, // Could be added to form later
+        budgetJustification: 'Budget justification to be provided',
+        timeline: '12 months', // Default timeline
+        biodata: {
+          name: data.name,
+          age: data.age,
+          email: data.email,
+          firstTimeApplicant: data.firstTimeApplicant
+        },
+        proposalFileName: uploadResult.filename
+      };
+
+      const submittedApplication = await submitApplication(applicationData);
+      
+      console.log('Application submitted successfully:', {
+        applicationId: submittedApplication.id,
         documentId: uploadResult.id,
         documentFilename: uploadResult.filename
       });
