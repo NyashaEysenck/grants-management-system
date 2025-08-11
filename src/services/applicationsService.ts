@@ -270,6 +270,62 @@ export const submitApplication = async (applicationData: {
   }
 };
 
+export const updateApplicationStatus = async (id: string, status: Application['status'], comments?: string): Promise<Application> => {
+  try {
+    console.log(`Updating application ${id} status to ${status}`);
+    
+    const response = await apiClient.put(`/applications/${id}/status`, {
+      status,
+      comments: comments || ''
+    });
+    
+    console.log('Application status updated successfully:', response);
+    
+    // Convert backend response to frontend Application interface
+    const application: Application = {
+      id: response.id,
+      grantId: response.grantId || response.grant_id,
+      applicantName: response.applicantName || response.applicant_name,
+      email: response.email,
+      proposalTitle: response.proposalTitle || response.proposal_title,
+      status: response.status,
+      submissionDate: response.submissionDate || response.submission_date,
+      reviewComments: response.reviewComments || response.review_comments || '',
+      biodata: response.biodata,
+      deadline: response.deadline,
+      isEditable: response.isEditable || response.is_editable,
+      assignedReviewers: response.assignedReviewers || response.assigned_reviewers || [],
+      reviewerFeedback: response.reviewerFeedback || response.reviewer_feedback || [],
+      signOffApprovals: response.signOffApprovals || response.sign_off_approvals || [],
+      awardAmount: response.awardAmount || response.award_amount,
+      contractFileName: response.contractFileName || response.contract_file_name,
+      awardLetterGenerated: response.awardLetterGenerated || response.award_letter_generated,
+      revisionCount: response.revisionCount || response.revision_count || 0,
+      originalSubmissionDate: response.originalSubmissionDate || response.original_submission_date,
+      proposalFileName: response.proposalFileName || response.proposal_file_name
+    };
+    
+    return application;
+  } catch (error: any) {
+    console.error('Error updating application status:', error);
+    
+    let errorMessage = 'Failed to update application status';
+    if (error.response?.status === 401) {
+      errorMessage = 'Authentication failed. Please log in again.';
+    } else if (error.response?.status === 403) {
+      errorMessage = 'You do not have permission to update this application.';
+    } else if (error.response?.status === 404) {
+      errorMessage = 'Application not found.';
+    } else if (error.response?.status === 400) {
+      errorMessage = error.response?.data?.detail || 'Invalid status update data.';
+    } else if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail;
+    }
+    
+    throw new Error(errorMessage);
+  }
+};
+
 export const withdrawApplication = async (id: string): Promise<Application> => {
   try {
     console.log(`Withdrawing application ${id}`);
@@ -323,27 +379,116 @@ export const withdrawApplication = async (id: string): Promise<Application> => {
   }
 };
 
-export const markApplicationEditable = (id: string): boolean => {
-  const application = applicationsCache.find(app => app.id === id);
-  if (application) {
-    application.status = 'editable';
-    application.isEditable = true;
-    DataStorage.saveApplications(applicationsCache);
-    return true;
+export const markApplicationEditable = async (id: string): Promise<Application> => {
+  try {
+    console.log(`Marking application ${id} as editable`);
+    
+    const response = await apiClient.put(`/applications/${id}/status`, {
+      status: 'editable',
+      comments: 'Application marked as editable for revision'
+    });
+    
+    console.log('Application marked as editable successfully:', response);
+    
+    // Convert backend response to frontend Application interface
+    const application: Application = {
+      id: response.id,
+      grantId: response.grantId || response.grant_id,
+      applicantName: response.applicantName || response.applicant_name,
+      email: response.email,
+      proposalTitle: response.proposalTitle || response.proposal_title,
+      status: response.status,
+      submissionDate: response.submissionDate || response.submission_date,
+      reviewComments: response.reviewComments || response.review_comments || '',
+      biodata: response.biodata,
+      deadline: response.deadline,
+      isEditable: response.isEditable || response.is_editable,
+      assignedReviewers: response.assignedReviewers || response.assigned_reviewers || [],
+      reviewerFeedback: response.reviewerFeedback || response.reviewer_feedback || [],
+      signOffApprovals: response.signOffApprovals || response.sign_off_approvals || [],
+      awardAmount: response.awardAmount || response.award_amount,
+      contractFileName: response.contractFileName || response.contract_file_name,
+      awardLetterGenerated: response.awardLetterGenerated || response.award_letter_generated,
+      revisionCount: response.revisionCount || response.revision_count || 0,
+      originalSubmissionDate: response.originalSubmissionDate || response.original_submission_date,
+      proposalFileName: response.proposalFileName || response.proposal_file_name
+    };
+    
+    return application;
+  } catch (error: any) {
+    console.error('Error marking application as editable:', error);
+    
+    let errorMessage = 'Failed to mark application as editable';
+    if (error.response?.status === 401) {
+      errorMessage = 'Authentication failed. Please log in again.';
+    } else if (error.response?.status === 403) {
+      errorMessage = 'You do not have permission to edit this application.';
+    } else if (error.response?.status === 404) {
+      errorMessage = 'Application not found.';
+    } else if (error.response?.status === 400) {
+      errorMessage = error.response?.data?.detail || 'Cannot mark this application as editable.';
+    } else if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail;
+    }
+    
+    throw new Error(errorMessage);
   }
-  return false;
 };
 
-export const resubmitApplication = (id: string): boolean => {
-  const application = applicationsCache.find(app => app.id === id);
-  if (application && application.isEditable) {
-    application.status = 'submitted';
-    application.isEditable = false;
-    application.submissionDate = new Date().toISOString();
-    DataStorage.saveApplications(applicationsCache);
-    return true;
+export const resubmitApplication = async (id: string): Promise<Application> => {
+  try {
+    console.log(`Resubmitting application ${id}`);
+    
+    const response = await apiClient.put(`/applications/${id}/status`, {
+      status: 'submitted',
+      comments: 'Application resubmitted by researcher'
+    });
+    
+    console.log('Application resubmitted successfully:', response);
+    
+    // Convert backend response to frontend Application interface
+    const application: Application = {
+      id: response.id,
+      grantId: response.grantId || response.grant_id,
+      applicantName: response.applicantName || response.applicant_name,
+      email: response.email,
+      proposalTitle: response.proposalTitle || response.proposal_title,
+      status: response.status,
+      submissionDate: response.submissionDate || response.submission_date,
+      reviewComments: response.reviewComments || response.review_comments || '',
+      biodata: response.biodata,
+      deadline: response.deadline,
+      isEditable: response.isEditable || response.is_editable,
+      assignedReviewers: response.assignedReviewers || response.assigned_reviewers || [],
+      reviewerFeedback: response.reviewerFeedback || response.reviewer_feedback || [],
+      signOffApprovals: response.signOffApprovals || response.sign_off_approvals || [],
+      awardAmount: response.awardAmount || response.award_amount,
+      contractFileName: response.contractFileName || response.contract_file_name,
+      awardLetterGenerated: response.awardLetterGenerated || response.award_letter_generated,
+      revisionCount: response.revisionCount || response.revision_count || 0,
+      originalSubmissionDate: response.originalSubmissionDate || response.original_submission_date,
+      proposalFileName: response.proposalFileName || response.proposal_file_name
+    };
+    
+    return application;
+  } catch (error: any) {
+    console.error('Error resubmitting application:', error);
+    
+    let errorMessage = 'Failed to resubmit application';
+    if (error.response?.status === 401) {
+      errorMessage = 'Authentication failed. Please log in again.';
+    } else if (error.response?.status === 403) {
+      errorMessage = 'You can only resubmit your own applications.';
+    } else if (error.response?.status === 404) {
+      errorMessage = 'Application not found.';
+    } else if (error.response?.status === 400) {
+      errorMessage = error.response?.data?.detail || 'Cannot resubmit this application.';
+    } else if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail;
+    }
+    
+    throw new Error(errorMessage);
   }
-  return false;
 };
 
 export const canWithdrawApplication = (application: Application): boolean => {

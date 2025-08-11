@@ -160,18 +160,19 @@ const Applications = () => {
       }
     };
 
-    const handleResubmitApplication = (applicationId: string) => {
-      const success = resubmitApplication(applicationId);
-      if (success) {
+    const handleResubmitApplication = async (applicationId: string) => {
+      try {
+        await resubmitApplication(applicationId);
         toast({
           title: "Application Resubmitted",
           description: "Your application has been successfully resubmitted.",
         });
-        // Force component re-render by getting fresh data
-      } else {
+        // Refresh applications data
+        loadUserApplications();
+      } catch (error: any) {
         toast({
-          title: "Cannot Resubmit",
-          description: "Application cannot be resubmitted at this time.",
+          title: "Resubmit Failed",
+          description: error.message || "Application cannot be resubmitted at this time.",
           variant: "destructive"
         });
       }
