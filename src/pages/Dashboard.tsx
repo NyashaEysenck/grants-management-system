@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,8 +24,25 @@ const Dashboard = () => {
   // Grants Manager Dashboard Logic
   if (isGrantsManager) {
     const allCalls = getAllCalls();
-    const allApplications = getAllApplications();
+    const [allApplications, setAllApplications] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const allProjects = getAllProjects();
+
+    useEffect(() => {
+      const loadApplications = async () => {
+        try {
+          setLoading(true);
+          const applications = await getAllApplications();
+          setAllApplications(applications);
+        } catch (error) {
+          console.error('Error loading applications:', error);
+          setAllApplications([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadApplications();
+    }, []);
 
     // Calculate metrics
     const totalCalls = allCalls.length;
@@ -59,6 +76,17 @@ const Dashboard = () => {
       });
       return hasOverdueMilestones;
     });
+
+    if (loading) {
+      return (
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading dashboard...</p>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="max-w-7xl mx-auto space-y-6">
