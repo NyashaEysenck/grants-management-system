@@ -28,31 +28,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Check for existing token and user data on mount
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('🔄 Initializing authentication...');
+      
       try {
         const userData = authService.getUserData();
         const accessToken = authService.getAccessToken();
+        const refreshToken = authService.getRefreshToken();
+        
+        console.log('📊 Auth state check:', {
+          hasUserData: !!userData,
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          userEmail: userData?.email
+        });
         
         if (userData && accessToken) {
           // Check if token is valid, if not try to refresh
-          if (authService.isTokenExpired(accessToken)) {
-            const refreshSuccess = await refreshToken();
-            if (refreshSuccess) {
-              setUser(userData);
+          const isExpired = authService.isTokenExpired(accessToken);
+          console.log('⏰ Token expiration check:', { isExpired });
+          
+          if (isExpired) {
+            console.log('🔄 Token expired, attempting refresh...');
+            try {
+              const response = await authService.refreshToken();
+              if (response) {
+                console.log('✅ Token refresh successful');
+                setUser(userData);
+              } else {
+                console.log('❌ Token refresh failed - no response');
+                authService.clearTokens();
+                setUser(null);
+              }
+            } catch (refreshError) {
+              console.error('❌ Token refresh failed during initialization:', refreshError);
+              authService.clearTokens();
+              setUser(null);
             }
           } else {
+            console.log('✅ Token is valid, setting user');
             setUser(userData);
           }
+        } else {
+          console.log('❌ Missing user data or access token');
+          setUser(null);
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('❌ Auth initialization error:', error);
         authService.clearTokens();
+        setUser(null);
       } finally {
         setLoading(false);
+        console.log('🏁 Auth initialization complete');
       }
     };
 
     initializeAuth();
-  }, []);
+  }, []); // No dependencies needed since we're calling authService directly
 
   const login = async (email: string, password: string, role?: string): Promise<boolean> => {
     try {

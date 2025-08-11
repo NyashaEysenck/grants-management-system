@@ -154,10 +154,17 @@ class AuthService {
   // Check if token is expired (basic check)
   isTokenExpired(token: string): boolean {
     try {
+      if (!token || token.split('.').length !== 3) {
+        return true;
+      }
+      
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const currentTime = Date.now() / 1000;
-      return payload.exp < currentTime;
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      // Add 30 second buffer to prevent edge cases
+      return payload.exp <= (currentTime + 30);
     } catch (error) {
+      console.error('Error checking token expiration:', error);
       return true;
     }
   }
