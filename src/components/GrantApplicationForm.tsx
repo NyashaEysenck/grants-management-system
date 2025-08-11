@@ -94,18 +94,23 @@ const GrantApplicationForm = () => {
 
   // Load biodata when email changes
   useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
+    const subscription = form.watch(async (value, { name }) => {
       if (name === 'email' && value.email && value.email.includes('@')) {
-        const biodata = getBiodata(value.email);
-        if (biodata) {
-          form.setValue('name', biodata.name);
-          form.setValue('age', biodata.age);
-          form.setValue('firstTimeApplicant', biodata.firstTimeApplicant);
-          
-          toast({
-            title: "Biodata Loaded",
-            description: "Your researcher information has been automatically filled.",
-          });
+        try {
+          const biodata = await getBiodata(value.email);
+          if (biodata) {
+            form.setValue('name', biodata.name);
+            form.setValue('age', biodata.age);
+            form.setValue('firstTimeApplicant', biodata.firstTimeApplicant);
+            
+            toast({
+              title: "Biodata Loaded",
+              description: "Your researcher information has been automatically filled.",
+            });
+          }
+        } catch (error) {
+          console.error('Error loading biodata:', error);
+          // Silently fail - biodata loading is optional
         }
       }
     });

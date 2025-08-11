@@ -49,7 +49,7 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
     }
   };
 
-  const onSubmit = (data: UpdateFormData) => {
+  const onSubmit = async (data: UpdateFormData) => {
     if (!selectedFile) {
       toast({
         title: "File Required",
@@ -59,23 +59,28 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
       return;
     }
 
-    const success = updateApplicationForRevision(
-      application.id,
-      data.proposalTitle,
-      data.proposalFile
-    );
-
-    if (success) {
+    console.log('Resubmit button clicked in update dialog for application:', application.id);
+    
+    try {
+      console.log('Calling updateApplicationForRevision...');
+      await updateApplicationForRevision(
+        application.id,
+        data.proposalTitle,
+        data.proposalFile
+      );
+      
+      console.log('Application revision update successful');
       toast({
         title: "Application Updated",
         description: "Your revised application has been resubmitted for review.",
       });
       onSuccess();
       onClose();
-    } else {
+    } catch (error: any) {
+      console.error('Application revision update failed:', error);
       toast({
         title: "Update Failed",
-        description: "Failed to update application. Please try again.",
+        description: error.message || "Failed to update application. Please try again.",
         variant: "destructive"
       });
     }

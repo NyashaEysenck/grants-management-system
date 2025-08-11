@@ -9,9 +9,7 @@ import {
   withdrawApplication,
   markApplicationEditable,
   markApplicationNeedsRevision,
-  resubmitApplication,
   canWithdrawApplication,
-  canResubmitApplication,
   canUpdateApplication,
   getReviewerFeedback,
   confirmContractReceipt,
@@ -160,23 +158,7 @@ const Applications = () => {
       }
     };
 
-    const handleResubmitApplication = async (applicationId: string) => {
-      try {
-        await resubmitApplication(applicationId);
-        toast({
-          title: "Application Resubmitted",
-          description: "Your application has been successfully resubmitted.",
-        });
-        // Refresh applications data
-        loadUserApplications();
-      } catch (error: any) {
-        toast({
-          title: "Resubmit Failed",
-          description: error.message || "Application cannot be resubmitted at this time.",
-          variant: "destructive"
-        });
-      }
-    };
+
 
     const handleContractUpload = (applicationId: string) => {
       const success = submitContract(applicationId, 'contract.pdf');
@@ -407,17 +389,7 @@ const Applications = () => {
                                   Withdraw
                                 </Button>
                               )}
-                              {canResubmitApplication(application) && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleResubmitApplication(application.id)}
-                                  className="text-green-600 hover:text-green-700"
-                                >
-                                  <Send className="h-4 w-4 mr-1" />
-                                  Resubmit
-                                </Button>
-                              )}
+
                               {canUpdateApplication(application) && (
                                 <Button
                                   size="sm"

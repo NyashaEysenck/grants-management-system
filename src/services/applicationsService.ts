@@ -473,6 +473,13 @@ export const resubmitApplication = async (id: string): Promise<Application> => {
     return application;
   } catch (error: any) {
     console.error('Error resubmitting application:', error);
+    console.error('Error details:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      config: error.config
+    });
     
     let errorMessage = 'Failed to resubmit application';
     if (error.response?.status === 401) {
@@ -485,6 +492,10 @@ export const resubmitApplication = async (id: string): Promise<Application> => {
       errorMessage = error.response?.data?.detail || 'Cannot resubmit this application.';
     } else if (error.response?.data?.detail) {
       errorMessage = error.response.data.detail;
+    } else if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+      errorMessage = 'Network error. Please check if the backend server is running.';
+    } else if (error.code === 'ECONNREFUSED') {
+      errorMessage = 'Cannot connect to server. Please ensure the backend is running on port 8000.';
     }
     
     throw new Error(errorMessage);
@@ -498,7 +509,10 @@ export const canWithdrawApplication = (application: Application): boolean => {
 };
 
 export const canResubmitApplication = (application: Application): boolean => {
-  return application.status === 'editable' && application.isEditable === true;
+  // Applications can be resubmitted if they are in editable state, need revision, or were rejected/withdrawn
+  const resubmittableStatuses = ['editable', 'needs_revision', 'rejected', 'withdrawn'];
+  return resubmittableStatuses.includes(application.status) || 
+         (application.status === 'editable' && application.isEditable === true);
 };
 
 export const generateReviewToken = (): string => {
@@ -646,25 +660,75 @@ export const storeReviewToken = (applicationId: string, token: string): void => 
   localStorage.setItem('review-tokens', JSON.stringify(storedTokens));
 };
 
-export const updateApplicationForRevision = (id: string, newProposalTitle: string, newProposalFile: string): boolean => {
-  const application = applicationsCache.find(app => app.id === id);
-  if (application && (application.status === 'editable' || application.status === 'needs_revision')) {
-    application.proposalTitle = newProposalTitle;
-    application.proposalFileName = newProposalFile;
-    application.status = 'submitted';
-    application.isEditable = false;
-    application.submissionDate = new Date().toISOString();
-    application.revisionCount = (application.revisionCount || 0) + 1;
+export const updateApplicationForRevision = async (id: string, newProposalTitle: string, newProposalFile: string): Promise<Application> => {
+  try {
+    console.log(`Updating application ${id} for revision`);
+    console.log('New proposal title:', newProposalTitle);
+    console.log('New proposal file:', newProposalFile);
     
-    // Store original submission date if not already stored
-    if (!application.originalSubmissionDate) {
-      application.originalSubmissionDate = application.submissionDate;
+    // Update application data and resubmit in single API call
+    const response = await apiClient.put(`/applications/${id}`, {
+      proposalTitle: newProposalTitle,
+      proposalFileName: newProposalFile,
+      status: 'submitted',
+      revisionNotes: 'Application revised and resubmitted by researcher'
+    });
+    
+    console.log('Application updated and resubmitted:', response);
+    
+    // Convert backend response to frontend Application interface
+    const application: Application = {
+      id: response.id,
+      grantId: response.grantId || response.grant_id,
+      applicantName: response.applicantName || response.applicant_name,
+      email: response.email,
+      proposalTitle: response.proposalTitle || response.proposal_title,
+      status: response.status,
+      submissionDate: response.submissionDate || response.submission_date,
+      reviewComments: response.reviewComments || response.review_comments || '',
+      biodata: response.biodata,
+      deadline: response.deadline,
+      isEditable: response.isEditable || response.is_editable,
+      assignedReviewers: response.assignedReviewers || response.assigned_reviewers || [],
+      reviewerFeedback: response.reviewerFeedback || response.reviewer_feedback || [],
+      signOffApprovals: response.signOffApprovals || response.sign_off_approvals || [],
+      awardAmount: response.awardAmount || response.award_amount,
+      contractFileName: response.contractFileName || response.contract_file_name,
+      awardLetterGenerated: response.awardLetterGenerated || response.award_letter_generated,
+      revisionCount: response.revisionCount || response.revision_count || 0,
+      originalSubmissionDate: response.originalSubmissionDate || response.original_submission_date,
+      proposalFileName: response.proposalFileName || response.proposal_file_name
+    };
+    
+    return application;
+  } catch (error: any) {
+    console.error('Error updating application for revision:', error);
+    console.error('Error details:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    
+    let errorMessage = 'Failed to update application';
+    if (error.response?.status === 401) {
+      errorMessage = 'Authentication failed. Please log in again.';
+    } else if (error.response?.status === 403) {
+      errorMessage = 'You can only update your own applications.';
+    } else if (error.response?.status === 404) {
+      errorMessage = 'Application not found.';
+    } else if (error.response?.status === 400) {
+      errorMessage = error.response?.data?.detail || 'Cannot update this application.';
+    } else if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail;
+    } else if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+      errorMessage = 'Network error. Please check if the backend server is running.';
+    } else if (error.code === 'ECONNREFUSED') {
+      errorMessage = 'Cannot connect to server. Please ensure the backend is running on port 8000.';
     }
     
-    DataStorage.saveApplications(applicationsCache);
-    return true;
+    throw new Error(errorMessage);
   }
-  return false;
 };
 
 export const markApplicationNeedsRevision = (id: string, feedback: string): boolean => {
