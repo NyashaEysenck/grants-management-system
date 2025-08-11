@@ -1,24 +1,12 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiClient } from '../lib/api';
-
-interface User {
-  email: string;
-  role: string;
-  name: string;
-  id?: string;
-}
-
-interface LoginResponse {
-  access_token: string;
-  token_type: string;
-  user: User;
-}
+import { authService, User } from '../services/authService';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  login: (email: string, password: string, role?: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  refreshToken: () => Promise<boolean>;
   isAuthenticated: boolean;
   loading: boolean;
 }
@@ -37,44 +25,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing token on mount
+  // Check for existing token and user data on mount
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    const userData = localStorage.getItem('user_data');
-    
-    if (token && userData) {
+    const initializeAuth = async () => {
       try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
+        const userData = authService.getUserData();
+        const accessToken = authService.getAccessToken();
+        
+        if (userData && accessToken) {
+          // Check if token is valid, if not try to refresh
+          if (authService.isTokenExpired(accessToken)) {
+            const refreshSuccess = await refreshToken();
+            if (refreshSuccess) {
+              setUser(userData);
+            }
+          } else {
+            setUser(userData);
+          }
+        }
       } catch (error) {
-        console.error('Error parsing stored user data:', error);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
+        console.error('Auth initialization error:', error);
+        authService.clearTokens();
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string, role?: string): Promise<boolean> => {
     try {
       setLoading(true);
       
-      // Create form data for OAuth2 login
-      const formData = new FormData();
-      formData.append('username', email);
-      formData.append('password', password);
-
-      const response = await apiClient.post<LoginResponse>('/auth/login', formData, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
-
+      const response = await authService.login(email, password, role);
+      
       if (response.access_token && response.user) {
-        // Store token and user data
-        localStorage.setItem('auth_token', response.access_token);
-        localStorage.setItem('user_data', JSON.stringify(response.user));
-        
         setUser(response.user);
         return true;
       }
@@ -87,16 +73,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
-    setUser(null);
+  const refreshToken = async (): Promise<boolean> => {
+    try {
+      const response = await authService.refreshToken();
+      return !!response;
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      await logout();
+      return false;
+    }
+  };
+
+  const logout = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      await authService.logout();
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Clear local state even if API call fails
+      authService.clearTokens();
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const value = {
     user,
     login,
     logout,
+    refreshToken,
     isAuthenticated: !!user,
     loading
   };
