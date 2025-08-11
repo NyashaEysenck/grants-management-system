@@ -26,6 +26,8 @@ const userSchema = z.object({
 type UserFormData = z.infer<typeof userSchema>;
 
 const UserManagement = () => {
+  console.log('🏗️ UserManagement component mounting');
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -33,8 +35,13 @@ const UserManagement = () => {
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
-    queryFn: () => usersService.getAllUsers(),
+    queryFn: () => {
+      console.log('🔄 React Query executing getAllUsers');
+      return usersService.getAllUsers();
+    },
   });
+  
+  console.log('📊 UserManagement state:', { usersCount: users.length, isLoading });
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
@@ -48,7 +55,7 @@ const UserManagement = () => {
 
   const createUserMutation = useMutation({
     mutationFn: (userData: UserFormData) => {
-      const userDataWithPassword: Omit<User, 'id' | 'createdAt'> = {
+      const userDataWithPassword = {
         name: userData.name,
         email: userData.email,
         role: userData.role,
@@ -171,9 +178,7 @@ const UserManagement = () => {
   };
 
   // Calculate summary statistics
-  const roleStats = usersService.getUserCountByRole();
-  const statusStats = usersService.getUserCountByStatus();
-  const totalUsers = users.length;
+  const userCounts = usersService.getUserCountByRoleAndStatus();
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -295,7 +300,7 @@ const UserManagement = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalUsers}</div>
+            <div className="text-2xl font-bold">{users.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -304,7 +309,7 @@ const UserManagement = () => {
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statusStats.active || 0}</div>
+            <div className="text-2xl font-bold">{userCounts?.active || 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -313,7 +318,7 @@ const UserManagement = () => {
             <UserX className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statusStats.inactive || 0}</div>
+            <div className="text-2xl font-bold">{userCounts?.inactive || 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -322,7 +327,7 @@ const UserManagement = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{roleStats.Admin || 0}</div>
+            <div className="text-2xl font-bold">{userCounts?.Admin || 0}</div>
           </CardContent>
         </Card>
       </div>
@@ -363,7 +368,7 @@ const UserManagement = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {new Date(user.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">

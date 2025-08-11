@@ -27,7 +27,15 @@ export interface UserUpdate {
 
 class UsersService {
   async getAllUsers(): Promise<User[]> {
-    return await apiClient.get<User[]>('/users');
+    console.log('🔍 Making API call to /users');
+    try {
+      const result = await apiClient.get<User[]>('/users');
+      console.log('✅ Successfully got users:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting users:', error);
+      throw error;
+    }
   }
 
   async getUserById(id: string): Promise<User | null> {
@@ -88,6 +96,18 @@ class UsersService {
       console.error('Error fetching user count by status:', error);
       return {};
     }
+  }
+
+  getUserCountByRoleAndStatus(): Record<string, number> {
+    // This is a placeholder that returns empty counts
+    // In a real implementation, this would calculate from the users data
+    return {
+      active: 0,
+      inactive: 0,
+      Admin: 0,
+      'Grants Manager': 0,
+      Researcher: 0
+    };
   }
 }
 
