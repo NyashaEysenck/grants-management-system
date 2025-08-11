@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, User } from '../services/authService';
+import { setAuthInitializing } from '../lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -29,6 +30,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       console.log('🔄 Initializing authentication...');
+      
+      // Prevent API interceptor from interfering during initialization
+      setAuthInitializing(true);
       
       try {
         const userData = authService.getUserData();
@@ -77,6 +81,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         authService.clearTokens();
         setUser(null);
       } finally {
+        // Re-enable API interceptor after initialization
+        setAuthInitializing(false);
         setLoading(false);
         console.log('🏁 Auth initialization complete');
       }

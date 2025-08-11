@@ -16,6 +16,14 @@ let failedQueue: Array<{
   reject: (error?: any) => void;
 }> = [];
 
+// Flag to prevent interceptor from interfering during auth initialization
+let isInitializingAuth = false;
+
+// Export function to control auth initialization state
+export const setAuthInitializing = (initializing: boolean) => {
+  isInitializingAuth = initializing;
+};
+
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) {
@@ -49,6 +57,11 @@ api.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+
+    // Don't interfere if auth is initializing
+    if (isInitializingAuth) {
+      return Promise.reject(error);
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
