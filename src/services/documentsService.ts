@@ -42,7 +42,8 @@ class DocumentsService {
 
   async getAllDocuments(): Promise<Document[]> {
     try {
-      return await apiClient.get<Document[]>('/documents');
+      const response = await apiClient.get<Document[]>('/documents/');
+      return response || [];
     } catch (error) {
       console.error('Error fetching documents:', error);
       return [];
@@ -189,7 +190,6 @@ class DocumentsService {
     this.documents = this.documents.filter(doc => doc.id !== documentId);
     
     if (this.documents.length < initialLength) {
-      this.saveDocuments();
       return true;
     }
     return false;
@@ -210,7 +210,6 @@ class DocumentsService {
       document.lastModified = new Date().toISOString();
     }
 
-    this.saveDocuments();
     return true;
   }
 

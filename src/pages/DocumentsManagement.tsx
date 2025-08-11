@@ -10,7 +10,7 @@ import { documentsService } from '../services/documentsService';
 import { useAuth } from '../context/AuthContext';
 import DocumentViewer from '../components/DocumentViewer';
 import { Search, FileText, Calendar, User, Eye, Filter } from 'lucide-react';
-import type { Document, DocumentFolder } from '../types/documents';
+import type { Document, DocumentFolder } from '../services/documentsService';
 
 const DocumentsManagement = () => {
   const { user } = useAuth();
@@ -24,11 +24,30 @@ const DocumentsManagement = () => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   const documentFolders: DocumentFolder[] = [
-    { name: 'Applications', description: 'Grant application documents' },
-    { name: 'Reviews', description: 'Review and evaluation documents' },
-    { name: 'Reports', description: 'Progress and final reports' },
-    { name: 'Contracts', description: 'Legal and contract documents' },
-    { name: 'Other', description: 'Miscellaneous documents' }
+    { 
+      name: 'Applications', 
+      description: 'Grant application documents',
+      icon: 'FileText',
+      accessRoles: ['Researcher', 'Grants Manager', 'Admin']
+    },
+    { 
+      name: 'Projects', 
+      description: 'Active project documents and deliverables',
+      icon: 'Folder',
+      accessRoles: ['Researcher', 'Grants Manager', 'Admin']
+    },
+    { 
+      name: 'Reports', 
+      description: 'Progress reports and final submissions',
+      icon: 'BarChart3',
+      accessRoles: ['Researcher', 'Grants Manager', 'Admin']
+    },
+    { 
+      name: 'Awards', 
+      description: 'Award letters and funding agreements',
+      icon: 'Award',
+      accessRoles: ['Researcher', 'Grants Manager', 'Admin']
+    }
   ];
 
   useEffect(() => {
@@ -43,8 +62,10 @@ const DocumentsManagement = () => {
     try {
       setLoading(true);
       const docs = await documentsService.getAllDocuments();
-      setDocuments(docs);
+      setDocuments(Array.isArray(docs) ? docs : []);
     } catch (error) {
+      console.error('Error loading documents:', error);
+      setDocuments([]);
       toast({
         title: "Error",
         description: "Failed to load documents. Please try again.",
@@ -56,6 +77,12 @@ const DocumentsManagement = () => {
   };
 
   const filterDocuments = () => {
+    // Ensure documents is always an array
+    if (!Array.isArray(documents)) {
+      setFilteredDocuments([]);
+      return;
+    }
+
     let filtered = documents;
 
     // Filter by folder
@@ -67,12 +94,12 @@ const DocumentsManagement = () => {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(doc =>
-        doc.name.toLowerCase().includes(query) ||
-        doc.createdBy.toLowerCase().includes(query) ||
-        doc.versions.some(version => 
-          version.fileName.toLowerCase().includes(query)
-        ) ||
-        doc.tags?.some(tag => tag.toLowerCase().includes(query))
+        doc.name?.toLowerCase().includes(query) ||
+        doc.createdBy?.toLowerCase().includes(query) ||
+        (doc.versions && Array.isArray(doc.versions) && doc.versions.some(version => 
+          version.fileName?.toLowerCase().includes(query)
+        )) ||
+        (doc.tags && Array.isArray(doc.tags) && doc.tags.some(tag => tag.toLowerCase().includes(query)))
       );
     }
 
