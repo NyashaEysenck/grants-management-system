@@ -42,19 +42,32 @@ const ReviewerPage = () => {
   });
 
   useEffect(() => {
-    if (token) {
-      const app = getApplicationByReviewToken(token);
-      if (app) {
-        setApplication(app);
-      } else {
-        toast({
-          title: "Invalid Review Link",
-          description: "This review link is not valid or has expired.",
-          variant: "destructive"
-        });
-        navigate('/');
+    const loadApplication = async () => {
+      if (token) {
+        try {
+          const app = await getApplicationByReviewToken(token);
+          if (app) {
+            setApplication(app);
+          } else {
+            toast({
+              title: "Invalid Review Link",
+              description: "This review link is not valid or has expired.",
+              variant: "destructive"
+            });
+            navigate('/');
+          }
+        } catch (error: any) {
+          toast({
+            title: "Error",
+            description: error.message || 'Failed to load application',
+            variant: "destructive"
+          });
+          navigate('/');
+        }
       }
-    }
+    };
+
+    loadApplication();
   }, [token, navigate, toast]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,26 +106,26 @@ const ReviewerPage = () => {
   const onSubmit = async (data: ReviewFormData) => {
     if (!application || !token) return;
 
-    const success = submitReviewerFeedback({
-      applicationId: application.id,
-      reviewerEmail: data.reviewerEmail,
-      reviewerName: data.reviewerName,
-      comments: data.comments,
-      decision: data.decision,
-      annotatedFileName: selectedFile?.name,
-      reviewToken: token,
-    });
+    try {
+      await submitReviewerFeedback({
+        applicationId: application.id,
+        reviewerEmail: data.reviewerEmail,
+        reviewerName: data.reviewerName,
+        comments: data.comments,
+        decision: data.decision,
+        annotatedFileName: selectedFile?.name,
+        reviewToken: token,
+      });
 
-    if (success) {
       setIsSubmitted(true);
       toast({
         title: "Review Submitted",
         description: "Thank you for your feedback. Your review has been submitted successfully.",
       });
-    } else {
+    } catch (error: any) {
       toast({
         title: "Submission Failed",
-        description: "There was an error submitting your review. Please try again.",
+        description: error.message || "There was an error submitting your review. Please try again.",
         variant: "destructive"
       });
     }

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   getAllApplications, 
+  getUserApplications,
   getApplicationsByUser, 
   getStatusColor,
   updateApplicationStatus,
@@ -73,7 +74,51 @@ const Applications = () => {
 
   // For researchers, show their applications with search and filter
   if (user.role.toLowerCase() === 'researcher') {
-    const userApplications = getApplicationsByUser(user.email);
+    const [userApplications, setUserApplications] = useState<Application[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
+
+    const loadUserApplications = async (showToast = false) => {
+      try {
+        setLoading(true);
+        setError(null);
+        console.log('Loading applications for researcher...');
+        
+        const applications = await getUserApplications();
+        setUserApplications(applications);
+        
+        if (showToast) {
+          toast({
+            title: "Applications Refreshed",
+            description: `Successfully loaded ${applications.length} applications.`,
+          });
+        }
+        
+        console.log(`Loaded ${applications.length} applications for researcher`);
+      } catch (error: any) {
+        console.error('Error loading researcher applications:', error);
+        setError(error.message || 'Failed to load applications');
+        setUserApplications([]); // Clear applications on error
+        
+        toast({
+          title: "Failed to Load Applications",
+          description: error.message || 'Unable to connect to the server. Please try again.',
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    useEffect(() => {
+      loadUserApplications();
+    }, [user.email]);
+
+    const handleRetryResearcher = () => {
+      setRetryCount(prev => prev + 1);
+      loadUserApplications(true);
+    };
 
     // Get unique statuses for filter options
     const availableStatuses = useMemo(() => {
@@ -162,12 +207,72 @@ const Applications = () => {
       setSearchQuery('');
       setStatusFilter('all');
     };
+
+    // Loading state
+    if (loading) {
+      return (
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your applications...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Error state with retry functionality
+    if (error && !loading) {
+      return (
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="mb-4">
+              <svg className="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Your Applications</h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">{error}</p>
+            <div className="space-x-4">
+              <Button onClick={handleRetryResearcher} className="bg-blue-600 hover:bg-blue-700">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Retry
+              </Button>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Refresh Page
+              </Button>
+            </div>
+            {retryCount > 0 && (
+              <p className="text-sm text-gray-500 mt-4">
+                Retry attempts: {retryCount}
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
     
     return (
       <div className="max-w-7xl space-y-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Applications</h1>
-          <p className="text-gray-600 mt-2">Track the status of your grant applications</p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">My Applications</h1>
+            <p className="text-gray-600 mt-2">Track the status of your grant applications</p>
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              onClick={() => loadUserApplications(true)} 
+              variant="outline"
+              disabled={loading}
+              className="flex items-center"
+            >
+              <svg className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
         </div>
 
         {userApplications.length === 0 ? (
@@ -409,21 +514,49 @@ const Applications = () => {
   if (user.role.toLowerCase() === 'grants manager') {
     const [allApplications, setAllApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
+
+    const loadApplications = async (showToast = false) => {
+      try {
+        setLoading(true);
+        setError(null);
+        console.log('Loading applications for grants manager...');
+        
+        const applications = await getAllApplications();
+        setAllApplications(applications);
+        
+        if (showToast) {
+          toast({
+            title: "Applications Refreshed",
+            description: `Successfully loaded ${applications.length} applications.`,
+          });
+        }
+        
+        console.log(`Loaded ${applications.length} applications successfully`);
+      } catch (error: any) {
+        console.error('Error loading applications:', error);
+        setError(error.message || 'Failed to load applications');
+        setAllApplications([]); // Clear applications on error
+        
+        toast({
+          title: "Failed to Load Applications",
+          description: error.message || 'Unable to connect to the server. Please try again.',
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
     useEffect(() => {
-      const loadApplications = async () => {
-        try {
-          setLoading(true);
-          const applications = await getAllApplications();
-          setAllApplications(applications);
-        } catch (error) {
-          console.error('Error loading applications:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
       loadApplications();
     }, []);
+
+    const handleRetry = () => {
+      setRetryCount(prev => prev + 1);
+      loadApplications(true);
+    };
     
     // Filter applications
     const filteredApplications = allApplications.filter(app => {
@@ -444,17 +577,17 @@ const Applications = () => {
       total: allApplications.length
     };
 
-    const handleReviewSubmit = (data: ReviewFormData) => {
+    const handleReviewSubmit = async (data: ReviewFormData) => {
       if (!selectedApplication) return;
       
-      let success = false;
-      if (data.decision === 'needs_revision') {
-        success = markApplicationNeedsRevision(selectedApplication.id, data.comments);
-      } else {
-        success = updateApplicationStatus(selectedApplication.id, data.decision);
-      }
-      
-      if (success) {
+      try {
+        let updatedApplication;
+        if (data.decision === 'needs_revision') {
+          updatedApplication = await updateApplicationStatus(selectedApplication.id, 'needs_revision', data.comments);
+        } else {
+          updatedApplication = await updateApplicationStatus(selectedApplication.id, data.decision, data.comments);
+        }
+        
         toast({
           title: "Application Updated",
           description: `Application status changed to ${data.decision.replace('_', ' ')}.`
@@ -462,11 +595,13 @@ const Applications = () => {
         setIsReviewDialogOpen(false);
         setSelectedApplication(null);
         form.reset();
-        // Force component re-render by getting fresh data
-      } else {
+        
+        // Refresh applications data
+        loadApplications();
+      } catch (error: any) {
         toast({
           title: "Error",
-          description: "Failed to update application status.",
+          description: error.message || "Failed to update application status.",
           variant: "destructive"
         });
       }
@@ -546,11 +681,59 @@ const Applications = () => {
       );
     }
 
+    // Error state with retry functionality
+    if (error && !loading) {
+      return (
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="mb-4">
+              <svg className="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Applications</h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">{error}</p>
+            <div className="space-x-4">
+              <Button onClick={handleRetry} className="bg-blue-600 hover:bg-blue-700">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Retry
+              </Button>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Refresh Page
+              </Button>
+            </div>
+            {retryCount > 0 && (
+              <p className="text-sm text-gray-500 mt-4">
+                Retry attempts: {retryCount}
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="max-w-7xl space-y-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Application Review</h1>
-          <p className="text-gray-600 mt-2">Review and manage grant applications</p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Application Review</h1>
+            <p className="text-gray-600 mt-2">Review and manage grant applications</p>
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              onClick={() => loadApplications(true)} 
+              variant="outline"
+              disabled={loading}
+              className="flex items-center"
+            >
+              <svg className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
         </div>
 
         {/* Summary Cards */}

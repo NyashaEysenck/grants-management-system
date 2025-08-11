@@ -51,7 +51,7 @@ Thank you for your time and expertise.
     });
   };
 
-  const handleAssignReviewers = () => {
+  const handleAssignReviewers = async () => {
     const validEmails = reviewerEmails.filter(email => email.trim() && email.includes('@'));
     
     if (validEmails.length === 0) {
@@ -63,29 +63,20 @@ Thank you for your time and expertise.
       return;
     }
 
-    // Generate review tokens and store them
-    const reviewLinks: { email: string; link: string }[] = [];
-    validEmails.forEach(email => {
-      const token = generateReviewToken();
-      storeReviewToken(application.id, token);
-      const reviewLink = `${window.location.origin}/review/${token}`;
-      reviewLinks.push({ email, link: reviewLink });
-    });
-
-    // Assign reviewers
-    const success = assignReviewers(application.id, validEmails);
-    
-    if (success) {
-      setGeneratedLinks(reviewLinks);
+    try {
+      // Assign reviewers via backend API
+      const result = await assignReviewers(application.id, validEmails);
+      
+      setGeneratedLinks(result.reviewTokens);
       
       toast({
         title: "Reviewers Assigned",
         description: `Successfully assigned ${validEmails.length} reviewer(s). Review links generated below.`,
       });
-    } else {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to assign reviewers.",
+        description: error.message || "Failed to assign reviewers.",
         variant: "destructive"
       });
     }
