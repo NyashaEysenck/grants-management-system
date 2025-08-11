@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { authService } from '../services/authService';
 
 // Create axios instance with base configuration
 const api: AxiosInstance = axios.create({
@@ -9,10 +10,15 @@ const api: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and handle token refresh
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('auth_token');
+  async (config) => {
+    // Skip token injection for auth endpoints
+    if (config.url?.includes('/auth/login') || config.url?.includes('/auth/refresh')) {
+      return config;
+    }
+    
+    const token = await authService.ensureValidToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,13 +34,25 @@ api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid, redirect to login
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_data');
-      window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+    
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        // Try to refresh the token
+        const tokens = await authService.refreshTokens();
+        originalRequest.headers.Authorization = `Bearer ${tokens.access_token}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed, clear tokens and redirect to login
+        authService.clearTokens();
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
     }
+    
     return Promise.reject(error);
   }
 );
