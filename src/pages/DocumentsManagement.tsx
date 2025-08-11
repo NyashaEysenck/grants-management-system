@@ -513,11 +513,11 @@ const DocumentsManagement = () => {
                           <DialogHeader>
                             <DialogTitle>Document Details</DialogTitle>
                           </DialogHeader>
-                          {selectedDocument && (
-                            <DocumentViewer 
-                              document={selectedDocument} 
-                              onVersionUploaded={handleVersionUploaded}
-                            />
+                           {selectedDocument && (
+                             <DocumentViewer 
+                               document={selectedDocument as any} 
+                               onVersionUploaded={handleVersionUploaded}
+                             />
                           )}
                         </DialogContent>
                       </Dialog>

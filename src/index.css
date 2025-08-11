@@ -2,95 +2,112 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
+/* Modern University Burgundy Color Scheme */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
+    /* Primary burgundy university colors */
+    --primary: 343 71% 31%;           /* Rich burgundy #8B1538 */
+    --primary-foreground: 45 100% 95%; /* Warm cream text */
+    
+    /* Secondary warm tones */
+    --secondary: 35 25% 88%;          /* Warm cream background */
+    --secondary-foreground: 343 45% 15%; /* Dark burgundy text */
+    
+    /* Muted elegant tones */
+    --muted: 40 15% 92%;              /* Light warm beige */
+    --muted-foreground: 35 12% 35%;   /* Warm gray text */
+    
+    /* Accent gold tones */
+    --accent: 45 90% 65%;             /* Gold accent */
+    --accent-foreground: 343 45% 15%; /* Dark text on gold */
+    
+    /* Destructive states */
+    --destructive: 0 62% 50%;         /* Red for errors */
+    --destructive-foreground: 0 0% 98%; /* White text */
+    
+    /* Background colors */
+    --background: 45 50% 98%;         /* Warm white background */
+    --foreground: 343 25% 15%;        /* Dark burgundy text */
+    
+    /* Border and ring colors */
+    --border: 35 20% 85%;             /* Warm border */
+    --input: 35 20% 85%;              /* Input border */
+    --ring: 343 71% 31%;              /* Burgundy focus ring */
+    
+    /* Card styling */
+    --card: 45 30% 96%;               /* Warm card background */
+    --card-foreground: 343 25% 15%;   /* Dark text on cards */
+    
+    /* Popover styling */
+    --popover: 45 30% 96%;            /* Warm popover bg */
+    --popover-foreground: 343 25% 15%; /* Dark text */
+    
+    /* Sidebar styling */
+    --sidebar-background: 343 71% 31%; /* Burgundy sidebar */
+    --sidebar-foreground: 45 100% 95%; /* Cream text */
+    --sidebar-primary: 45 90% 65%;     /* Gold accents */
+    --sidebar-primary-foreground: 343 45% 15%; /* Dark text */
+    --sidebar-accent: 343 40% 40%;     /* Lighter burgundy */
+    --sidebar-accent-foreground: 45 100% 95%; /* Cream text */
+    --sidebar-border: 343 40% 40%;     /* Border color */
+    --sidebar-ring: 45 90% 65%;        /* Gold focus ring */
+    
+    /* Modern gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(343 71% 31%), hsl(343 60% 40%));
+    --gradient-accent: linear-gradient(135deg, hsl(45 90% 65%), hsl(45 80% 70%));
+    --gradient-subtle: linear-gradient(180deg, hsl(45 50% 98%), hsl(45 30% 96%));
+    
+    /* Modern shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(343 71% 31% / 0.2);
+    --shadow-glow: 0 0 40px hsl(45 90% 65% / 0.3);
+    --shadow-card: 0 4px 20px -2px hsl(343 71% 31% / 0.1);
+    
+    /* Border radius */
     --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Dark mode burgundy theme */
+    --background: 343 45% 8%;         /* Very dark burgundy */
+    --foreground: 45 100% 95%;        /* Cream text */
+    
+    --card: 343 35% 12%;              /* Dark burgundy cards */
+    --card-foreground: 45 90% 90%;    /* Light cream text */
+    
+    --popover: 343 35% 12%;           /* Dark popover */
+    --popover-foreground: 45 90% 90%; /* Light text */
+    
+    --primary: 343 71% 45%;           /* Lighter burgundy in dark */
+    --primary-foreground: 45 100% 95%; /* Cream text */
+    
+    --secondary: 343 25% 18%;         /* Dark secondary */
+    --secondary-foreground: 45 80% 85%; /* Light text */
+    
+    --muted: 343 25% 15%;             /* Dark muted */
+    --muted-foreground: 45 60% 70%;   /* Muted text */
+    
+    --accent: 45 90% 65%;             /* Gold accent */
+    --accent-foreground: 343 45% 15%; /* Dark text */
+    
+    --destructive: 0 62% 50%;         /* Red */
+    --destructive-foreground: 0 0% 98%; /* White */
+    
+    --border: 343 25% 20%;            /* Dark border */
+    --input: 343 25% 20%;             /* Dark input border */
+    --ring: 45 90% 65%;               /* Gold focus ring */
+    
+    /* Dark sidebar */
+    --sidebar-background: 343 45% 8%; /* Very dark burgundy */
+    --sidebar-foreground: 45 100% 95%; /* Cream text */
+    --sidebar-primary: 45 90% 65%;     /* Gold accents */
+    --sidebar-primary-foreground: 343 45% 15%; /* Dark text */
+    --sidebar-accent: 343 35% 25%;     /* Accent burgundy */
+    --sidebar-accent-foreground: 45 100% 95%; /* Cream text */
+    --sidebar-border: 343 25% 20%;     /* Border */
+    --sidebar-ring: 45 90% 65%;        /* Gold ring */
   }
 }
 
@@ -98,8 +115,84 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
-
+  
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: "cv11", "ss01";
+    font-variation-settings: "opsz" 32;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+  }
+}
+
+/* Custom components */
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-sm border border-white/20;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .gradient-bg {
+    background: var(--gradient-subtle);
+  }
+  
+  .elegant-shadow {
+    box-shadow: var(--shadow-elegant);
+  }
+  
+  .glow-shadow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .smooth-transition {
+    transition: var(--transition-smooth);
+  }
+  
+  .university-header {
+    background: var(--gradient-primary);
+    @apply text-primary-foreground;
+  }
+  
+  .text-elegant {
+    @apply text-foreground/80;
+  }
+  
+  .btn-university {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+    @apply elegant-shadow smooth-transition;
+  }
+  
+  .btn-gold {
+    background: var(--gradient-accent);
+    @apply text-accent-foreground hover:scale-105;
+    @apply smooth-transition glow-shadow;
+  }
+}
+
+/* Animation utilities */
+@layer utilities {
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 3s ease infinite;
+  }
+  
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  .hover-lift {
+    @apply hover:scale-105 hover:-translate-y-1;
+    @apply smooth-transition;
+  }
+  
+  .hover-glow {
+    @apply hover:glow-shadow;
+    @apply smooth-transition;
   }
 }

@@ -1,5 +1,6 @@
 export interface Document {
   id: string;
+  name: string;
   filename: string;
   originalName: string;
   size: number;
@@ -7,7 +8,13 @@ export interface Document {
   uploadedAt: string;
   uploadedBy: string;
   applicationId?: string;
-  versions?: DocumentVersion[];
+  folder: string;
+  createdAt: string;
+  createdBy: string;
+  currentVersion: number;
+  lastModified: string;
+  tags?: string[];
+  versions: DocumentVersion[];
 }
 
 export interface DocumentVersion {
@@ -19,6 +26,10 @@ export interface DocumentVersion {
   uploadedAt: string;
   uploadedBy: string;
   version: number;
+  versionNumber: number;
+  fileName: string;
+  fileSize: string;
+  notes?: string;
   isAnnotated?: boolean;
 }
 
