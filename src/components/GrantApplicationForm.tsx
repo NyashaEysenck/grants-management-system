@@ -40,8 +40,11 @@ const GrantApplicationForm = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDraftSaved, setIsDraftSaved] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   
   const grantCall = id ? getCallById(id) : null;
   
@@ -203,18 +206,76 @@ const GrantApplicationForm = () => {
       
       // Step 1: Upload the document first
       console.log('Uploading document...');
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      // Show upload start toast
+      toast({
+        title: "📤 Starting Upload",
+        description: `Uploading ${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(1)}MB)...`,
+      });
+
       let uploadResult;
       try {
         uploadResult = await documentsService.uploadDocument(
           data.proposalTitle || 'Grant Application Document',
           'Applications',
           selectedFile,
-          `Grant application for ${grantCall.title}`
+          `Grant application for ${grantCall.title}`,
+          (progress) => {
+            setUploadProgress(progress);
+            if (progress === 100) {
+              toast({
+                title: "✅ Upload Complete",
+                description: "Document uploaded successfully. Processing application...",
+              });
+            }
+          }
         );
         console.log('Document uploaded successfully:', uploadResult);
+        
+        // Final success feedback for upload
+        toast({
+          title: "✅ Document Upload Successful",
+          description: `${uploadResult.filename} has been uploaded and is ready for submission.`,
+        });
+        
       } catch (uploadError) {
         console.error('Document upload failed:', uploadError);
+        setIsUploading(false);
+        setUploadProgress(0);
+        
+        // Specific error handling for upload failures
+        let errorTitle = "Upload Failed";
+        let errorMessage = "Document upload failed. Please try again.";
+        
+        if (uploadError instanceof Error) {
+          if (uploadError.message.includes('File size')) {
+            errorTitle = "File Too Large";
+            errorMessage = uploadError.message;
+          } else if (uploadError.message.includes('File type')) {
+            errorTitle = "Unsupported File Type";
+            errorMessage = uploadError.message;
+          } else if (uploadError.message.includes('Network')) {
+            errorTitle = "Network Error";
+            errorMessage = "Upload failed due to network issues. Please check your connection and try again.";
+          } else if (uploadError.message.includes('timeout')) {
+            errorTitle = "Upload Timeout";
+            errorMessage = "Upload took too long. Please try with a smaller file or check your connection.";
+          } else {
+            errorMessage = uploadError.message;
+          }
+        }
+        
+        toast({
+          title: errorTitle,
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
         throw new Error(`Document upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+      } finally {
+        setIsUploading(false);
       }
       
       // Step 2: Submit the complete application to backend
@@ -484,19 +545,67 @@ const GrantApplicationForm = () => {
                     <Input
                       id="proposalFile"
                       type="file"
-                      accept=".pdf,.doc,.docx"
+                      accept=".pdf,.doc,.docx,.txt,.xls,.xlsx"
                       onChange={handleFileChange}
-                      className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      disabled={isUploading || isSubmitting}
+                      className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
                     />
                   </div>
-                  <Upload className="h-5 w-5 text-gray-400" />
+                  {isUploading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  ) : (
+                    <Upload className="h-5 w-5 text-gray-400" />
+                  )}
                 </div>
-                {selectedFile && (
-                  <p className="text-sm text-gray-600">Selected: {selectedFile.name}</p>
+                
+                {selectedFile && !isUploading && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-800">{selectedFile.name}</p>
+                        <p className="text-xs text-green-600">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • Ready for upload
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
+
+                {isUploading && selectedFile && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <p className="text-sm font-medium text-blue-800">Uploading {selectedFile.name}...</p>
+                    </div>
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-xs text-blue-600">
+                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                      <p className="text-xs text-blue-600 font-medium">
+                        {uploadProgress}%
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {form.formState.errors.proposalFile && (
                   <p className="text-sm text-red-600">Proposal document is required</p>
                 )}
+                
+                <div className="text-xs text-gray-500">
+                  Supported formats: PDF, Word (.doc, .docx), Excel (.xls, .xlsx), Text (.txt) • Max size: 50MB
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -514,13 +623,18 @@ const GrantApplicationForm = () => {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
               className="flex items-center gap-2"
             >
-              {isSubmitting ? (
+              {isUploading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Submitting...
+                  Uploading Document ({uploadProgress}%)
+                </>
+              ) : isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Submitting Application...
                 </>
               ) : (
                 <>

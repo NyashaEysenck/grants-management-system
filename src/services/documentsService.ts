@@ -82,9 +82,41 @@ class DocumentsService {
     name: string,
     folder: DocumentFolder['name'],
     file: File,
-    notes?: string
+    notes?: string,
+    onProgress?: (progress: number) => void
   ): Promise<{ id: string; message: string; filename: string; size: string }> {
     try {
+      // Validate file before upload
+      if (!file) {
+        throw new Error('No file selected for upload');
+      }
+
+      if (file.size === 0) {
+        throw new Error('Cannot upload empty file');
+      }
+
+      // Check file size (max 50MB)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        throw new Error(`File size (${(file.size / 1024 / 1024).toFixed(1)}MB) exceeds maximum allowed size of 50MB`);
+      }
+
+      // Check file type
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error(`File type "${file.type}" is not supported. Please upload PDF, Word, Excel, or text files.`);
+      }
+
+      console.log(`Starting upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+
       const formData = new FormData();
       formData.append('name', name);
       formData.append('folder', folder);
@@ -93,20 +125,63 @@ class DocumentsService {
         formData.append('notes', notes);
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/documents/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        },
-        body: formData
+      // Use XMLHttpRequest for progress tracking
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        // Track upload progress
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable && onProgress) {
+            const progress = Math.round((event.loaded / event.total) * 100);
+            onProgress(progress);
+            console.log(`Upload progress: ${progress}%`);
+          }
+        });
+
+        // Handle completion
+        xhr.addEventListener('load', async () => {
+          try {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              const result = JSON.parse(xhr.responseText);
+              console.log('Document uploaded successfully:', result);
+              resolve(result);
+            } else {
+              let errorMessage = 'Upload failed';
+              try {
+                const errorData = JSON.parse(xhr.responseText);
+                errorMessage = errorData.detail || errorMessage;
+              } catch (e) {
+                errorMessage = `Upload failed with status ${xhr.status}`;
+              }
+              reject(new Error(errorMessage));
+            }
+          } catch (error) {
+            reject(new Error('Failed to process upload response'));
+          }
+        });
+
+        // Handle errors
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network error during upload. Please check your connection and try again.'));
+        });
+
+        xhr.addEventListener('timeout', () => {
+          reject(new Error('Upload timed out. Please try again with a smaller file or check your connection.'));
+        });
+
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload was cancelled'));
+        });
+
+        // Configure request
+        xhr.open('POST', `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/documents/upload`);
+        xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('access_token')}`);
+        xhr.timeout = 300000; // 5 minute timeout
+
+        // Start upload
+        xhr.send(formData);
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Upload failed');
-      }
-
-      return await response.json();
     } catch (error) {
       console.error('Error uploading document:', error);
       throw error;
