@@ -12,6 +12,8 @@ import {
   canWithdrawApplication,
   canUpdateApplication,
   confirmContractReceipt,
+  getApplication,
+  submitReviewerFeedback,
   type Application 
 } from '../services/applicationsService';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -179,9 +181,22 @@ const Applications = () => {
       setIsFeedbackDialogOpen(true);
     };
 
-    const openUpdateDialog = (application: Application) => {
-      setSelectedApplication(application);
-      setIsUpdateDialogOpen(true);
+    const openUpdateDialog = async (application: Application) => {
+      try {
+        // Fetch full application details to ensure reviewer feedback and latest data are present
+        const fullApp = await getApplication(application.id);
+        setSelectedApplication(fullApp);
+      } catch (error: any) {
+        // Fallback to existing item and notify
+        setSelectedApplication(application);
+        toast({
+          title: "Unable to load latest details",
+          description: error.message || 'Opening existing application data.',
+          variant: "destructive"
+        });
+      } finally {
+        setIsUpdateDialogOpen(true);
+      }
     };
 
     const clearFilters = () => {
@@ -551,12 +566,30 @@ const Applications = () => {
       if (!selectedApplication) return;
       
       try {
+        // 1. Update application status
         let updatedApplication;
         if (data.decision === 'needs_revision') {
           updatedApplication = await updateApplicationStatus(selectedApplication.id, 'needs_revision', data.comments);
         } else {
           updatedApplication = await updateApplicationStatus(selectedApplication.id, data.decision, data.comments);
         }
+        
+        // 2. Create reviewer feedback entry for grants manager review
+        const decisionMapping: Record<string, 'approve' | 'reject' | 'request_changes'> = {
+          'approved': 'approve',
+          'rejected': 'reject',
+          'needs_revision': 'request_changes',
+          'under_review': 'approve'
+        };
+        
+        await submitReviewerFeedback({
+          applicationId: selectedApplication.id,
+          reviewerEmail: user.email,
+          reviewerName: user.name || 'Grants Manager',
+          comments: data.comments,
+          decision: decisionMapping[data.decision] || 'approve',
+          reviewToken: 'grants-manager-review'
+        });
         
         toast({
           title: "Application Updated",

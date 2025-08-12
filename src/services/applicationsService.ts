@@ -14,6 +14,29 @@ const typedApplicationsData = applicationsData as { applications: Application[] 
 // Initialize persistent storage with fallback to JSON data
 let applicationsCache: Application[] = DataStorage.initializeFromJSON('applications', typedApplicationsData.applications);
 
+// Fetch a single application with full details (including reviewer feedback)
+export const getApplication = async (id: string): Promise<Application> => {
+  try {
+    console.log(`Fetching application ${id} from backend API...`);
+    const response = await apiClient.get(`/applications/${id}`);
+    console.log('Application details received:', response);
+    return mapApplicationResponse(response);
+  } catch (error: any) {
+    console.error('Error fetching application details:', error);
+    let errorMessage = 'Failed to load application details';
+    if (error.response?.status === 401) {
+      errorMessage = 'Authentication failed. Please log in again.';
+    } else if (error.response?.status === 403) {
+      errorMessage = 'You do not have permission to view this application.';
+    } else if (error.response?.status === 404) {
+      errorMessage = 'Application not found.';
+    } else if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail;
+    }
+    throw new Error(errorMessage);
+  }
+};
+
 export const getAllApplications = async (): Promise<Application[]> => {
   try {
     console.log('Fetching applications from backend API...');

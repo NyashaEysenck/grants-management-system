@@ -97,6 +97,37 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Reviewer Notes (if any) */}
+          {application.reviewerFeedback && application.reviewerFeedback.length > 0 && (
+            <div className="border rounded-md p-4 bg-gray-50">
+              <h3 className="font-semibold mb-2">Reviewer Notes</h3>
+              <div className="space-y-3 max-h-60 overflow-auto pr-2">
+                {application.reviewerFeedback.map((fb) => (
+                  <div key={fb.id} className="border rounded p-3 bg-white">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-medium">{fb.reviewerName || 'Reviewer'}</p>
+                        {fb.reviewerEmail && (
+                          <p className="text-xs text-gray-500">{fb.reviewerEmail}</p>
+                        )}
+                        <p className="text-xs font-medium text-blue-700 mt-1 capitalize">{fb.decision?.replace('_', ' ') || 'feedback'}</p>
+                      </div>
+                      {fb.submittedAt && (
+                        <p className="text-xs text-gray-400">{new Date(fb.submittedAt).toLocaleString()}</p>
+                      )}
+                    </div>
+                    {fb.comments && (
+                      <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{fb.comments}</p>
+                    )}
+                    {fb.annotatedFileName && (
+                      <p className="text-xs text-blue-600 mt-2"> {fb.annotatedFileName}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-blue-50 p-4 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">Revision #{(application.revisionCount || 0) + 1}</h4>
             <p className="text-sm text-blue-700">
