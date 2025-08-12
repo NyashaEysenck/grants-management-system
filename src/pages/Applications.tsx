@@ -11,9 +11,7 @@ import {
   markApplicationNeedsRevision,
   canWithdrawApplication,
   canUpdateApplication,
-  getReviewerFeedback,
   confirmContractReceipt,
-  getApplicationRevisionHistory,
   type Application 
 } from '../services/applicationsService';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -354,8 +352,7 @@ const Applications = () => {
                     </TableHeader>
                     <TableBody>
                       {filteredApplications.map((application) => {
-                      const feedback = getReviewerFeedback(application.id);
-                      const revisionHistory = getApplicationRevisionHistory(application.id);
+                      const feedback = application.reviewerFeedback || [];
                       
                       return (
                         <TableRow key={application.id}>
@@ -373,7 +370,7 @@ const Applications = () => {
                           </TableCell>
                           <TableCell>
                             <span className="text-sm text-gray-600">
-                              {revisionHistory.count > 0 ? `${revisionHistory.count} revision(s)` : 'Original'}
+                              {application.revisionCount && application.revisionCount > 0 ? `${application.revisionCount} revision(s)` : 'Original'}
                             </span>
                           </TableCell>
                           <TableCell>
@@ -452,13 +449,13 @@ const Applications = () => {
                       <span className="font-medium">Status:</span> {selectedApplication.status.replace('_', ' ').toUpperCase()}
                     </div>
                     <div>
-                      <span className="font-medium">Revisions:</span> {getApplicationRevisionHistory(selectedApplication.id).count}
+                      <span className="font-medium">Revisions:</span> {selectedApplication.revisionCount || 0}
                     </div>
                   </div>
                 </div>
 
                 <ReviewerFeedbackCard 
-                  feedback={getReviewerFeedback(selectedApplication.id)}
+                  feedback={selectedApplication.reviewerFeedback || []}
                   canUpdate={canUpdateApplication(selectedApplication)}
                   onUpdateApplication={() => {
                     setIsFeedbackDialogOpen(false);
@@ -476,7 +473,7 @@ const Applications = () => {
             application={selectedApplication}
             isOpen={isUpdateDialogOpen}
             onClose={() => setIsUpdateDialogOpen(false)}
-            onSuccess={() => {/* Force component re-render by getting fresh data */}}
+            onSuccess={() => { loadUserApplications(true); }}
           />
         )}
       </div>
@@ -819,8 +816,6 @@ const Applications = () => {
               </TableHeader>
               <TableBody>
                 {filteredApplications.map((application) => {
-                  const revisionHistory = getApplicationRevisionHistory(application.id);
-                  
                   return (
                     <TableRow key={application.id}>
                       <TableCell className="font-medium">
@@ -865,7 +860,7 @@ const Applications = () => {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-gray-600">
-                          {revisionHistory.count > 0 ? `${revisionHistory.count} revision(s)` : 'Original'}
+                          {application.revisionCount && application.revisionCount > 0 ? `${application.revisionCount} revision(s)` : 'Original'}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -1019,10 +1014,10 @@ const Applications = () => {
                 </div>
 
                 {/* Reviewer Feedback Section */}
-                {getReviewerFeedback(selectedApplication.id).length > 0 && (
+                {(selectedApplication.reviewerFeedback && selectedApplication.reviewerFeedback.length > 0) && (
                   <div className="space-y-4">
                     <h4 className="font-semibold">Reviewer Feedback</h4>
-                    {getReviewerFeedback(selectedApplication.id).map((feedback) => (
+                    {selectedApplication.reviewerFeedback!.map((feedback) => (
                       <div key={feedback.id} className="border p-4 rounded-lg bg-gray-50">
                         <div className="flex justify-between items-start mb-2">
                           <div>
