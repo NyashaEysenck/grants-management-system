@@ -259,7 +259,23 @@ class DocumentsService {
       });
 
       // Get the actual filename from the response headers or use the provided filename
-      const contentDisposition = response.headers['content-disposition'];
+      // Find Content-Disposition header case-insensitively
+      const getHeaderCaseInsensitive = (headers: any, headerName: string): string | undefined => {
+        const headerNameLower = headerName.toLowerCase();
+        // Try direct access first
+        if (headers[headerName]) return headers[headerName];
+        if (headers[headerNameLower]) return headers[headerNameLower];
+        
+        // Then try to find it by iterating through all headers
+        for (const key in headers) {
+          if (key.toLowerCase() === headerNameLower) {
+            return headers[key];
+          }
+        }
+        return undefined;
+      };
+      
+      const contentDisposition = getHeaderCaseInsensitive(response.headers, 'Content-Disposition');
       let downloadFilename = filename;
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="(.+)"/);
