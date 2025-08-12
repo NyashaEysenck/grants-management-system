@@ -10,8 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { useToast } from '@/hooks/use-toast';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Edit, Trash2, RotateCcw } from 'lucide-react';
@@ -22,6 +22,14 @@ const userSchema = z.object({
   role: z.string().min(1, 'Role is required'),
   status: z.enum(['active', 'inactive']),
 });
+
+// Define role colors for badges
+const roleColors: Record<string, string> = {
+  'Admin': 'bg-purple-100 text-purple-800',
+  'Grants Manager': 'bg-blue-100 text-blue-800',
+  'Reviewer': 'bg-green-100 text-green-800',
+  'Researcher': 'bg-amber-100 text-amber-800'
+};
 
 type UserFormData = z.infer<typeof userSchema>;
 
@@ -86,7 +94,13 @@ const UserManagement = () => {
     if (editingUser) {
       updateUserMutation.mutate({ id: editingUser.id, data });
     } else {
-      const userDataWithPassword = { ...data, password: 'tempPassword123!' };
+      const userDataWithPassword: UserCreate = {
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        status: data.status,
+        password: 'tempPassword123!'
+      };
       createUserMutation.mutate(userDataWithPassword);
     }
   };
@@ -122,7 +136,82 @@ const UserManagement = () => {
             <DialogHeader>
               <DialogTitle>{editingUser ? 'Edit User' : 'Add New User'}</DialogTitle>
             </DialogHeader>
-            <UserForm form={form} onSubmit={handleSubmit} isSubmitting={createUserMutation.isPending || updateUserMutation.isPending} />
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="Enter email address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Admin">Admin</SelectItem>
+                          <SelectItem value="Grants Manager">Grants Manager</SelectItem>
+                          <SelectItem value="Researcher">Researcher</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" disabled={createUserMutation.isPending || updateUserMutation.isPending}>
+                  {createUserMutation.isPending || updateUserMutation.isPending ? 'Saving...' : 'Save'}
+                </Button>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
@@ -176,7 +265,7 @@ const UserManagement = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleResetPassword(user.id)}
+                          onClick={() => resetPasswordMutation.mutate(user.id)}
                           disabled={resetPasswordMutation.isPending}
                         >
                           <RotateCcw className="w-4 h-4" />
@@ -197,7 +286,7 @@ const UserManagement = () => {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleDelete(user.id)}
+                                onClick={() => deleteUserMutation.mutate(user.id)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
                                 Delete

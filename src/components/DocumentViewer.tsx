@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { documentsService } from '../services/documentsService';
 import { useAuth } from '../context/AuthContext';
 import { Download, Upload, FileText, Calendar, User } from 'lucide-react';
-import type { Document, DocumentVersion } from '../types/documents';
+import type { Document, DocumentVersion } from '../services/documentsService';
 
 interface DocumentViewerProps {
   document: Document;
@@ -23,7 +23,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ document, onVersionUplo
   const [isUploading, setIsUploading] = useState(false);
 
   const canUploadVersion = user?.role === 'Reviewer' || user?.role === 'Admin';
-  const latestVersion = document.versions[document.versions.length - 1];
+  const latestVersion = document.versions && document.versions.length > 0 ? document.versions[document.versions.length - 1] : null;
 
   const handleDownload = async () => {
     try {
@@ -123,7 +123,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ document, onVersionUplo
                 {document.name}
               </CardTitle>
               <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                <Badge variant="outline">{document.folder}</Badge>
+                <Badge variant="outline">Document</Badge>
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
                   {formatDate(document.createdAt)}
@@ -143,54 +143,41 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ document, onVersionUplo
         <CardContent>
           <div className="space-y-4">
             <div>
-              <h4 className="font-medium mb-2">Current Version (v{document.currentVersion})</h4>
+              <h4 className="font-medium mb-2">Current Version</h4>
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div>
-                    <span className="font-medium">File:</span> {latestVersion.fileName}
+                    <span className="font-medium">File:</span> {latestVersion?.fileName || 'N/A'}
                   </div>
                   <div>
-                    <span className="font-medium">Size:</span> {formatFileSize(latestVersion.fileSize)}
+                    <span className="font-medium">Size:</span> {latestVersion ? formatFileSize(latestVersion.fileSize) : 'N/A'}
                   </div>
                   <div>
-                    <span className="font-medium">Uploaded:</span> {formatDate(latestVersion.uploadedAt)}
+                    <span className="font-medium">Uploaded:</span> {latestVersion ? formatDate(latestVersion.uploadedAt) : 'N/A'}
                   </div>
                 </div>
-                {latestVersion.notes && (
-                  <div className="mt-3 pt-3 border-t">
-                    <span className="font-medium">Notes:</span> {latestVersion.notes}
-                  </div>
-                )}
+
               </div>
             </div>
 
-            {document.tags && document.tags.length > 0 && (
-              <div>
-                <h4 className="font-medium mb-2">Tags</h4>
-                <div className="flex flex-wrap gap-2">
-                  {document.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary">{tag}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Tags section removed - not in current Document interface */}
           </div>
         </CardContent>
       </Card>
 
       {/* Version History */}
-      {document.versions.length > 1 && (
+      {document.versions && document.versions.length > 1 && (
         <Card>
           <CardHeader>
             <CardTitle>Version History</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {document.versions.slice().reverse().map((version) => (
+              {document.versions && document.versions.slice().reverse().map((version) => (
                 <div key={version.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
-                      <Badge variant={version.versionNumber === document.currentVersion ? "default" : "outline"}>
+                      <Badge variant={version.versionNumber === 1 ? "default" : "outline"}>
                         v{version.versionNumber}
                       </Badge>
                       <span className="font-medium">{version.fileName}</span>
@@ -199,11 +186,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ document, onVersionUplo
                     <div className="text-sm text-gray-600 mt-1">
                       Uploaded by {version.uploadedBy} on {formatDate(version.uploadedAt)}
                     </div>
-                    {version.notes && (
-                      <div className="text-sm text-gray-600 mt-1">
-                        <span className="font-medium">Notes:</span> {version.notes}
-                      </div>
-                    )}
+
                   </div>
                 </div>
               ))}

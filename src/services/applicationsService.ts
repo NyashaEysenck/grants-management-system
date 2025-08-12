@@ -5,6 +5,9 @@ import axios from 'axios';
 import { Application, ResearcherBiodata, ReviewerFeedback, SignOffApproval } from './applications/types';
 import { mapApplicationResponse, mapApplicationsList } from './applications/mappers';
 
+// Re-export types for use by other components
+export type { Application, ResearcherBiodata, ReviewerFeedback, SignOffApproval };
+
 // Type assertion to ensure the imported JSON matches our Application interface
 const typedApplicationsData = applicationsData as { applications: Application[] };
 

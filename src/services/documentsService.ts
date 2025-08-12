@@ -400,5 +400,5 @@ class DocumentsService {
 export const documentsService = new DocumentsService();
 
 // Export the downloadApplicationDocument function for use in components
-export const downloadApplicationDocument = (applicationId: string, filename: string) => 
+export const downloadApplicationDocument = (applicationId: string, filename: string): Promise<void> => 
   documentsService.downloadApplicationDocument(applicationId, filename);

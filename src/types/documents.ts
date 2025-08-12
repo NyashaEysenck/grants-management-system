@@ -1,24 +1,37 @@
 export interface Document {
   id: string;
-  filename: string;
-  originalName: string;
-  size: number;
-  mimeType: string;
-  uploadedAt: string;
-  uploadedBy: string;
+  name: string;
+  folder: 'Applications' | 'Projects' | 'Awards' | 'Reports';
+  currentVersion: number;
+  versions: DocumentVersion[];
+  createdBy: string;
+  createdAt: string;
+  lastModified: string;
+  tags?: string[];
+  // Legacy fields for compatibility
+  filename?: string;
+  originalName?: string;
+  size?: number;
+  mimeType?: string;
+  uploadedAt?: string;
+  uploadedBy?: string;
   applicationId?: string;
-  versions?: DocumentVersion[];
 }
 
 export interface DocumentVersion {
   id: string;
-  filename: string;
-  originalName: string;
-  size: number;
-  mimeType: string;
-  uploadedAt: string;
+  versionNumber: number;
+  fileName: string;
   uploadedBy: string;
-  version: number;
+  uploadedAt: string;
+  fileSize: string;
+  notes?: string;
+  // Legacy fields for compatibility
+  filename?: string;
+  originalName?: string;
+  size?: number;
+  mimeType?: string;
+  version?: number;
   isAnnotated?: boolean;
 }
 
