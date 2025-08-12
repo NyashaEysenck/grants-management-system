@@ -258,46 +258,55 @@ class DocumentsService {
         timeout: 60000, // 1 minute timeout for large files
       });
 
-      // Get the actual filename from the response headers or use the provided filename
-      // Find Content-Disposition header case-insensitively
-      const getHeaderCaseInsensitive = (headers: any, headerName: string): string | undefined => {
-        const headerNameLower = headerName.toLowerCase();
-        // Try direct access first
-        if (headers[headerName]) return headers[headerName];
-        if (headers[headerNameLower]) return headers[headerNameLower];
-        
-        // Then try to find it by iterating through all headers
-        for (const key in headers) {
-          if (key.toLowerCase() === headerNameLower) {
-            return headers[key];
-          }
-        }
-        return undefined;
-      };
+      // Get the content type from the response
+      const contentType = response.headers['content-type'] || 'application/octet-stream';
       
-      const contentDisposition = getHeaderCaseInsensitive(response.headers, 'Content-Disposition');
-      let downloadFilename = filename;
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (filenameMatch) {
-          downloadFilename = filenameMatch[1];
-        }
-      }
-
-      // Create blob and trigger download
-      const blob = new Blob([response.data]);
+      // Create a blob from the response data
+      const blob = new Blob([response.data], { type: contentType });
+      
+      // Create a URL for the blob
       const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element to trigger the download
       const a = document.createElement('a');
       a.href = url;
+      
+      // Try to get the filename from Content-Disposition header, fallback to the provided filename
+      let downloadFilename = filename;
+      const contentDisposition = response.headers['content-disposition'] || '';
+      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      
+      if (filenameMatch && filenameMatch[1]) {
+        downloadFilename = filenameMatch[1].replace(/['"]/g, '');
+      }
+      
+      // Set the download attribute with the filename
       a.download = downloadFilename;
+      
+      // Append to body, click and remove
       document.body.appendChild(a);
       a.click();
+      
+      // Clean up
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
+      
       console.log('Application document downloaded successfully:', downloadFilename);
     } catch (error: any) {
       console.error('Error downloading application document:', error);
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received:', error.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error:', error.message);
+      }
       
       let errorMessage = 'Failed to download document';
       if (error.response?.status === 404) {
