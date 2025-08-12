@@ -176,9 +176,22 @@ const Applications = () => {
       }
     };
 
-    const openFeedbackDialog = (application: Application) => {
-      setSelectedApplication(application);
-      setIsFeedbackDialogOpen(true);
+    const openFeedbackDialog = async (application: Application) => {
+      try {
+        // Fetch full application details to ensure reviewer feedback and latest data are present
+        const fullApp = await getApplication(application.id);
+        setSelectedApplication(fullApp);
+        setIsFeedbackDialogOpen(true);
+      } catch (error: any) {
+        // Do NOT fallback to mock data - only show live backend data
+        console.error('Failed to fetch latest application details for feedback:', error);
+        toast({
+          title: "Unable to Load Application",
+          description: error.message || 'Cannot load application details from server. Please try again.',
+          variant: "destructive"
+        });
+        // Do not open the dialog if we can't get live data
+      }
     };
 
     const openUpdateDialog = async (application: Application) => {
@@ -186,16 +199,16 @@ const Applications = () => {
         // Fetch full application details to ensure reviewer feedback and latest data are present
         const fullApp = await getApplication(application.id);
         setSelectedApplication(fullApp);
+        setIsUpdateDialogOpen(true);
       } catch (error: any) {
-        // Fallback to existing item and notify
-        setSelectedApplication(application);
+        // Do NOT fallback to mock data - only show live backend data
+        console.error('Failed to fetch latest application details:', error);
         toast({
-          title: "Unable to load latest details",
-          description: error.message || 'Opening existing application data.',
+          title: "Unable to Load Application",
+          description: error.message || 'Cannot load application details from server. Please try again.',
           variant: "destructive"
         });
-      } finally {
-        setIsUpdateDialogOpen(true);
+        // Do not open the dialog if we can't get live data
       }
     };
 
