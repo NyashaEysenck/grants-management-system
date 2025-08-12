@@ -51,44 +51,40 @@ const LoginForm = () => {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-secondary/20 p-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-primary/5 to-accent/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-accent/5 to-primary/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      </div>
-
-      <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Left side - Branding and Features */}
         <div className="hidden lg:flex flex-col justify-center space-y-8 p-8">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg">
-                <University className="w-6 h-6 text-primary-foreground" />
+          <div className="space-y-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-primary rounded flex items-center justify-center">
+                <University className="w-10 h-10 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground font-playfair">
+                <h1 className="text-4xl font-bold text-foreground font-inter">
                   Grant Management
                 </h1>
-                <p className="text-muted-foreground">Academic Research Portal</p>
+                <p className="text-xl text-muted-foreground font-inter">
+                  Academic Research Portal
+                </p>
               </div>
             </div>
             
-            <p className="text-lg text-muted-foreground leading-relaxed">
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
               Empowering academic institutions with comprehensive grant management solutions. 
               Streamline your research funding process from application to project completion.
             </p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {features.map((feature, index) => (
-              <div key={index} className="flex items-start space-x-4 p-4 rounded-lg bg-card/50 backdrop-blur-sm border border-border/50 hover:bg-card/80 transition-all duration-300 hover:shadow-md">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <feature.icon className="w-5 h-5 text-primary" />
+              <div key={index} className="flex items-start space-x-4 p-6 flat-card hover:shadow-lg smooth-transition">
+                <div className="w-12 h-12 bg-primary rounded flex items-center justify-center flex-shrink-0">
+                  <feature.icon className="w-6 h-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground mb-1">{feature.title}</h3>
+                  <h3 className="font-semibold text-foreground mb-2 font-inter">{feature.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
                 </div>
               </div>
@@ -99,13 +95,13 @@ const LoginForm = () => {
         {/* Right side - Login Form */}
         <div className="flex flex-col justify-center">
           <div className="w-full max-w-md mx-auto">
-            <Card className="glass-card shadow-2xl border-0 bg-card/95 backdrop-blur-md">
+            <Card className="flat-card institutional-shadow">
               <CardHeader className="space-y-4 text-center pb-6">
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg mb-2">
+                <div className="mx-auto w-16 h-16 bg-primary rounded flex items-center justify-center mb-2">
                   <University className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl font-bold text-foreground font-playfair">
+                  <CardTitle className="text-3xl font-bold text-foreground font-inter">
                     Welcome Back
                   </CardTitle>
                   <p className="text-muted-foreground mt-2">
@@ -171,7 +167,8 @@ const LoginForm = () => {
                   
                   <Button 
                     type="submit" 
-                    className="w-full h-11 university shadow-lg hover:shadow-xl"
+                    variant="institutional"
+                    className="w-full h-11"
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -186,8 +183,8 @@ const LoginForm = () => {
                 </form>
 
                 {/* Demo credentials */}
-                <div className="bg-secondary/50 p-4 rounded-lg border border-border/30">
-                  <p className="text-sm font-medium text-foreground mb-2">Demo Credentials:</p>
+                <div className="bg-muted p-4 rounded border">
+                  <p className="text-sm font-semibold text-foreground mb-2">Demo Credentials:</p>
                   <div className="text-xs text-muted-foreground space-y-1">
                     <div>• researcher@grants.edu / research123</div>
                     <div>• manager@grants.edu / manager123</div>
