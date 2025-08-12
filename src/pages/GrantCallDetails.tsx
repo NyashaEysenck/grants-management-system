@@ -1,52 +1,23 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getCallById, type GrantCall } from '../services/grantCallsService';
+import { getCallById } from '../services/grantCallsService';
 import { ArrowLeft, Calendar, Building, Tag, Users, FileText, Target } from 'lucide-react';
 
 const GrantCallDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [grantCall, setGrantCall] = useState<GrantCall | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  const grantCall = id ? getCallById(id) : null;
 
-  useEffect(() => {
-    const load = async () => {
-      if (!id) return;
-      try {
-        setLoading(true);
-        const data = await getCallById(id);
-        setGrantCall(data ?? null);
-      } catch (e: any) {
-        console.error('Failed to load grant call', e);
-        setError(e?.message || 'Failed to load grant call');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [id]);
-
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading grant call...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!grantCall || error) {
+  if (!grantCall) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Grant Call Not Found</h1>
-          <p className="text-gray-600 mb-6">{error || 'The requested grant call could not be found.'}</p>
+          <p className="text-gray-600 mb-6">The requested grant call could not be found.</p>
           <Button onClick={() => navigate('/dashboard')} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard

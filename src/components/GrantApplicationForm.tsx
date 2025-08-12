@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Save, Send, Upload, User } from 'lucide-react';
-import { getCallById, type GrantCall } from '../services/grantCallsService';
+import { getCallById } from '../services/grantCallsService';
 import { saveBiodata, getBiodata, submitApplication, type ResearcherBiodata } from '../services/applicationsService';
 import { documentsService } from '../services/documentsService';
 import { useAuth } from '../context/AuthContext';
@@ -47,27 +47,8 @@ const GrantApplicationForm = () => {
   const [isDraftSaved, setIsDraftSaved] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [grantCall, setGrantCall] = useState<GrantCall | null>(null);
-  const [loadingCall, setLoadingCall] = useState<boolean>(true);
-  const [callError, setCallError] = useState<string | null>(null);
   
-  useEffect(() => {
-    const loadCall = async () => {
-      if (!id) { setLoadingCall(false); return; }
-      try {
-        setLoadingCall(true);
-        const data = await getCallById(id);
-        setGrantCall(data ?? null);
-      } catch (e: any) {
-        console.error('Failed to load grant call', e);
-        setCallError(e?.message || 'Failed to load grant call');
-        setGrantCall(null);
-      } finally {
-        setLoadingCall(false);
-      }
-    };
-    loadCall();
-  }, [id]);
+  const grantCall = id ? getCallById(id) : null;
   
   const form = useForm<ApplicationFormData>({
     defaultValues: {
@@ -142,32 +123,6 @@ const GrantApplicationForm = () => {
       form.setValue('grantType', grantCall.type);
     }
   }, [grantCall, form]);
-
-  if (loadingCall) {
-    return (
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading grant call...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!grantCall || callError) {
-    return (
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Grant Call Not Found</h1>
-          <p className="text-gray-600 mb-6">{callError || 'The requested grant call could not be found.'}</p>
-          <Button variant="outline" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

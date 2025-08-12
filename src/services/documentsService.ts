@@ -50,13 +50,10 @@ class DocumentsService {
     }
   }
 
-  async getDocumentsByUser(email: string): Promise<Document[]> {
-    try {
-      return await apiClient.get<Document[]>(`/documents?user=${encodeURIComponent(email)}`);
-    } catch (error) {
-      console.error('Error fetching documents by user:', error);
-      return [];
-    }
+  getDocumentsByUser(email: string): Document[] {
+    return this.documents.filter(doc => 
+      doc.versions.some(version => version.uploadedBy === email)
+    );
   }
 
   async getDocumentsByFolder(folder: DocumentFolder['name']): Promise<Document[]> {

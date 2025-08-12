@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../context/AuthContext';
 import { documentsService, Document, DocumentFolder } from '../services/documentsService';
@@ -77,13 +77,16 @@ const Documents = () => {
     documentsService.canAccessFolder(folder.name, user.role)
   );
 
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       uploadForm.setValue('name', file.name.split('.')[0]);
-      setPendingFile(file);
+      // Store file info for upload
+      sessionStorage.setItem('pendingFile', JSON.stringify({
+        name: file.name,
+        size: `${(file.size / 1024).toFixed(1)} KB`,
+        type: file.type
+      }));
       setIsUploadDialogOpen(true);
     }
   }, [uploadForm]);
@@ -100,7 +103,8 @@ const Documents = () => {
     }
   });
 
-  const handleUpload = async (data: UploadFormData) => {
+  const handleUpload = (data: UploadFormData) => {
+    const pendingFile = sessionStorage.getItem('pendingFile');
     if (!pendingFile) {
       toast({
         title: "Error",
@@ -109,12 +113,16 @@ const Documents = () => {
       });
       return;
     }
+
+    const fileInfo = JSON.parse(pendingFile);
     
     try {
-      await documentsService.uploadDocument(
+      documentsService.uploadDocument(
         data.name,
         data.folder,
-        pendingFile,
+        fileInfo.name,
+        user.email,
+        fileInfo.size,
         data.notes
       );
 
@@ -125,7 +133,7 @@ const Documents = () => {
 
       setIsUploadDialogOpen(false);
       uploadForm.reset();
-      setPendingFile(null);
+      sessionStorage.removeItem('pendingFile');
     } catch (error) {
       toast({
         title: "Error",
@@ -135,8 +143,11 @@ const Documents = () => {
     }
   };
 
-  const handleVersionUpload = async (data: VersionUploadData) => {
-    if (!selectedDocument || !pendingFile) {
+  const handleVersionUpload = (data: VersionUploadData) => {
+    if (!selectedDocument) return;
+
+    const pendingFile = sessionStorage.getItem('pendingFile');
+    if (!pendingFile) {
       toast({
         title: "Error",
         description: "No file selected for upload.",
@@ -144,25 +155,27 @@ const Documents = () => {
       });
       return;
     }
-    
-    try {
-      const success = await documentsService.uploadNewVersion(
-        selectedDocument.id,
-        pendingFile,
-        data.notes
-      );
 
-      if (success) {
-        toast({
-          title: "Success",
-          description: "New version uploaded successfully.",
-        });
-        setIsVersionDialogOpen(false);
-        setSelectedDocument(null);
-        versionForm.reset();
-        setPendingFile(null);
-      }
-    } catch (error) {
+    const fileInfo = JSON.parse(pendingFile);
+    
+    const success = documentsService.uploadNewVersion(
+      selectedDocument.id,
+      fileInfo.name,
+      user.email,
+      fileInfo.size,
+      data.notes
+    );
+
+    if (success) {
+      toast({
+        title: "Success",
+        description: "New version uploaded successfully.",
+      });
+      setIsVersionDialogOpen(false);
+      setSelectedDocument(null);
+      versionForm.reset();
+      sessionStorage.removeItem('pendingFile');
+    } else {
       toast({
         title: "Error",
         description: "Failed to upload new version.",
@@ -219,27 +232,17 @@ const Documents = () => {
     });
   };
 
-  const [documentsData, setDocumentsData] = useState<Document[]>([]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      const docs = isRestrictedUser 
-        ? await documentsService.getDocumentsByUser(user.email)
-        : await documentsService.getAllDocuments();
-      setDocumentsData(docs);
-    };
-    loadData();
-  }, [user.email, isRestrictedUser]);
-
-  const getFilteredDocuments = async () => {
-    let documents = documentsData;
+  const getFilteredDocuments = () => {
+    let documents = isRestrictedUser 
+      ? documentsService.getDocumentsByUser(user.email)
+      : documentsService.getAllDocuments();
 
     if (selectedFolder !== 'all') {
       documents = documents.filter(doc => doc.folder === selectedFolder);
     }
 
     if (searchQuery.trim()) {
-      documents = await documentsService.searchDocuments(searchQuery, user.email, isRestrictedUser);
+      documents = documentsService.searchDocuments(searchQuery, user.email, isRestrictedUser);
     }
 
     return documents;
@@ -256,15 +259,7 @@ const Documents = () => {
   };
 
   const stats = documentsService.getDocumentStats();
-  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
-
-  useEffect(() => {
-    const updateFiltered = async () => {
-      const filtered = await getFilteredDocuments();
-      setFilteredDocuments(filtered);
-    };
-    updateFiltered();
-  }, [documentsData, selectedFolder, searchQuery, user.email, isRestrictedUser]);
+  const filteredDocuments = getFilteredDocuments();
 
   return (
     <div className="max-w-7xl space-y-6">
@@ -416,7 +411,11 @@ const Documents = () => {
                             input.onchange = (e) => {
                               const file = (e.target as HTMLInputElement).files?.[0];
                               if (file) {
-                                setPendingFile(file);
+                                sessionStorage.setItem('pendingFile', JSON.stringify({
+                                  name: file.name,
+                                  size: `${(file.size / 1024).toFixed(1)} KB`,
+                                  type: file.type
+                                }));
                                 setIsVersionDialogOpen(true);
                               }
                             };
@@ -552,7 +551,7 @@ const Documents = () => {
                   onClick={() => {
                     setIsVersionDialogOpen(false);
                     setSelectedDocument(null);
-                    setPendingFile(null);
+                    sessionStorage.removeItem('pendingFile');
                   }}
                 >
                   Cancel
