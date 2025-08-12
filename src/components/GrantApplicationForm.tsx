@@ -127,6 +127,36 @@ const GrantApplicationForm = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Validate file size (50MB limit)
+      const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+      if (file.size > maxSize) {
+        toast({
+          title: "File Too Large",
+          description: "Please select a file smaller than 50MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain'
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Unsupported File Type",
+          description: "Please select a PDF, Word, Excel, or Text file.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setSelectedFile(file);
       form.setValue('proposalFile', file.name);
     }
@@ -147,15 +177,31 @@ const GrantApplicationForm = () => {
 
   const saveBiodataData = () => {
     const formData = form.getValues();
-    if (formData.email) {
-      const biodata: ResearcherBiodata = {
-        name: formData.name,
-        age: formData.age,
-        email: formData.email,
-        firstTimeApplicant: formData.firstTimeApplicant,
+    const biodataData: ResearcherBiodata = {
+      name: formData.name,
+      age: formData.age,
+      email: formData.email,
+      firstTimeApplicant: formData.firstTimeApplicant,
+    };
+    
+    saveBiodata(formData.email, biodataData);
+  };
+
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result) {
+          // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+          const base64String = (reader.result as string).split(',')[1];
+          resolve(base64String);
+        } else {
+          reject(new Error('Failed to read file'));
+        }
       };
-      saveBiodata(formData.email, biodata);
-    }
+      reader.onerror = () => reject(new Error('Error reading file'));
+      reader.readAsDataURL(file);
+    });
   };
 
   const onSubmit = async (data: ApplicationFormData) => {
@@ -225,82 +271,54 @@ const GrantApplicationForm = () => {
       // Save biodata for future use
       saveBiodataData();
       
-      // Step 1: Upload the document first
-      console.log('Uploading document...');
+      // Step 1: Convert document to base64
+      console.log('Converting document to base64...');
       setIsUploading(true);
       setUploadProgress(0);
       
-      // Show upload start toast
+      // Show processing start toast
       toast({
-        title: "📤 Starting Upload",
-        description: `Uploading ${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(1)}MB)...`,
+        title: "📤 Processing Document",
+        description: `Converting ${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(1)}MB) to base64...`,
       });
 
-      let uploadResult;
+      let fileBase64: string;
       try {
-        uploadResult = await documentsService.uploadDocument(
-          data.proposalTitle || 'Grant Application Document',
-          'Applications',
-          selectedFile,
-          `Grant application for ${grantCall.title}`,
-          (progress) => {
-            setUploadProgress(progress);
-            if (progress === 100) {
-              toast({
-                title: "✅ Upload Complete",
-                description: "Document uploaded successfully. Processing application...",
-              });
-            }
-          }
-        );
-        console.log('Document uploaded successfully:', uploadResult);
+        // Simulate progress for user feedback
+        setUploadProgress(25);
         
-        // Final success feedback for upload
+        fileBase64 = await convertFileToBase64(selectedFile);
+        
+        setUploadProgress(75);
+        
+        console.log('Document converted to base64 successfully');
+        
+        // Final success feedback for conversion
         toast({
-          title: "✅ Document Upload Successful",
-          description: `${uploadResult.filename} has been uploaded and is ready for submission.`,
+          title: "✅ Document Processing Complete",
+          description: `${selectedFile.name} has been processed and is ready for submission.`,
         });
         
-      } catch (uploadError) {
-        console.error('Document upload failed:', uploadError);
+        setUploadProgress(100);
+        
+      } catch (conversionError) {
+        console.error('Document conversion failed:', conversionError);
         setIsUploading(false);
         setUploadProgress(0);
         
-        // Specific error handling for upload failures
-        let errorTitle = "Upload Failed";
-        let errorMessage = "Document upload failed. Please try again.";
-        
-        if (uploadError instanceof Error) {
-          if (uploadError.message.includes('File size')) {
-            errorTitle = "File Too Large";
-            errorMessage = uploadError.message;
-          } else if (uploadError.message.includes('File type')) {
-            errorTitle = "Unsupported File Type";
-            errorMessage = uploadError.message;
-          } else if (uploadError.message.includes('Network')) {
-            errorTitle = "Network Error";
-            errorMessage = "Upload failed due to network issues. Please check your connection and try again.";
-          } else if (uploadError.message.includes('timeout')) {
-            errorTitle = "Upload Timeout";
-            errorMessage = "Upload took too long. Please try with a smaller file or check your connection.";
-          } else {
-            errorMessage = uploadError.message;
-          }
-        }
-        
         toast({
-          title: errorTitle,
-          description: errorMessage,
+          title: "Processing Failed",
+          description: "Failed to process document. Please try again.",
           variant: "destructive",
         });
         
-        throw new Error(`Document upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        throw new Error(`Document processing failed: ${conversionError instanceof Error ? conversionError.message : 'Unknown error'}`);
       } finally {
         setIsUploading(false);
       }
       
-      // Step 2: Submit the complete application to backend
-      console.log('Submitting application data...');
+      // Step 2: Submit the complete application to backend with base64 file data
+      console.log('Submitting application data with embedded file...');
       const applicationData = {
         grantId: id,
         applicantName: data.name,
@@ -321,7 +339,10 @@ const GrantApplicationForm = () => {
           email: data.email,
           firstTimeApplicant: data.firstTimeApplicant
         },
-        proposalFileName: uploadResult.filename
+        proposalFileName: selectedFile.name,
+        proposalFileData: fileBase64,
+        proposalFileSize: selectedFile.size,
+        proposalFileType: selectedFile.type
       };
 
       let submittedApplication;
@@ -329,8 +350,9 @@ const GrantApplicationForm = () => {
         submittedApplication = await submitApplication(applicationData);
         console.log('Application submitted successfully:', {
           applicationId: submittedApplication.id,
-          documentId: uploadResult.id,
-          documentFilename: uploadResult.filename
+          documentFilename: selectedFile.name,
+          documentSize: selectedFile.size,
+          documentType: selectedFile.type
         });
       } catch (submissionError) {
         console.error('Application submission failed:', submissionError);
