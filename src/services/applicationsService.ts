@@ -2,60 +2,8 @@ import applicationsData from '../data/applications.json';
 import { DataStorage } from '../utils/dataStorage';
 import { apiClient } from '../lib/api';
 import axios from 'axios';
-
-export interface ResearcherBiodata {
-  name: string;
-  age: number;
-  email: string;
-  firstTimeApplicant: boolean;
-}
-
-export interface ReviewerFeedback {
-  id: string;
-  applicationId: string;
-  reviewerEmail: string;
-  reviewerName?: string;
-  comments: string;
-  decision: 'approve' | 'reject' | 'request_changes';
-  annotatedFileName?: string;
-  submittedAt: string;
-  reviewToken: string;
-}
-
-export interface SignOffApproval {
-  id: string;
-  applicationId: string;
-  role: 'DORI' | 'DVC' | 'VC';
-  approverEmail: string;
-  approverName?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  comments?: string;
-  approvedAt?: string;
-  signOffToken: string;
-}
-
-export interface Application {
-  id: string;
-  grantId: string;
-  applicantName: string;
-  email: string;
-  proposalTitle: string;
-  status: 'submitted' | 'under_review' | 'approved' | 'rejected' | 'withdrawn' | 'editable' | 'awaiting_signoff' | 'signoff_complete' | 'contract_pending' | 'contract_received' | 'needs_revision';
-  submissionDate: string;
-  reviewComments: string;
-  biodata?: ResearcherBiodata;
-  deadline?: string;
-  isEditable?: boolean;
-  assignedReviewers?: string[];
-  reviewerFeedback?: ReviewerFeedback[];
-  signOffApprovals?: SignOffApproval[];
-  awardAmount?: number;
-  contractFileName?: string;
-  awardLetterGenerated?: boolean;
-  revisionCount?: number;
-  originalSubmissionDate?: string;
-  proposalFileName?: string;
-}
+import { Application, ResearcherBiodata, ReviewerFeedback, SignOffApproval } from './applications/types';
+import { mapApplicationResponse, mapApplicationsList } from './applications/mappers';
 
 // Type assertion to ensure the imported JSON matches our Application interface
 const typedApplicationsData = applicationsData as { applications: Application[] };
@@ -73,28 +21,7 @@ export const getAllApplications = async (): Promise<Application[]> => {
     console.log('Backend response received:', response);
     
     // Map backend response to frontend Application interface
-    const applications = response.map((app: any) => ({
-      id: app.id,
-      grantId: app.grantId || app.grant_id,
-      applicantName: app.applicantName || app.applicant_name,
-      email: app.email,
-      proposalTitle: app.proposalTitle || app.proposal_title,
-      status: app.status,
-      submissionDate: app.submissionDate || app.submission_date,
-      reviewComments: app.reviewComments || app.review_comments || '',
-      biodata: app.biodata,
-      deadline: app.deadline,
-      isEditable: app.isEditable || app.is_editable,
-      assignedReviewers: app.assignedReviewers || app.assigned_reviewers || [],
-      reviewerFeedback: app.reviewerFeedback || app.reviewer_feedback || [],
-      signOffApprovals: app.signOffApprovals || app.sign_off_approvals || [],
-      awardAmount: app.awardAmount || app.award_amount,
-      contractFileName: app.contractFileName || app.contract_file_name,
-      awardLetterGenerated: app.awardLetterGenerated || app.award_letter_generated,
-      revisionCount: app.revisionCount || app.revision_count || 0,
-      originalSubmissionDate: app.originalSubmissionDate || app.original_submission_date,
-      proposalFileName: app.proposalFileName || app.proposal_file_name
-    }));
+    const applications = mapApplicationsList(response);
     
     console.log(`Successfully fetched ${applications.length} applications from backend`);
     return applications;
@@ -131,28 +58,7 @@ export const getUserApplications = async (): Promise<Application[]> => {
     console.log('Backend response received:', response);
     
     // Map backend response to frontend Application interface
-    const applications = response.map((app: any) => ({
-      id: app.id,
-      grantId: app.grantId || app.grant_id,
-      applicantName: app.applicantName || app.applicant_name,
-      email: app.email,
-      proposalTitle: app.proposalTitle || app.proposal_title,
-      status: app.status,
-      submissionDate: app.submissionDate || app.submission_date,
-      reviewComments: app.reviewComments || app.review_comments || '',
-      biodata: app.biodata,
-      deadline: app.deadline,
-      isEditable: app.isEditable || app.is_editable,
-      assignedReviewers: app.assignedReviewers || app.assigned_reviewers || [],
-      reviewerFeedback: app.reviewerFeedback || app.reviewer_feedback || [],
-      signOffApprovals: app.signOffApprovals || app.sign_off_approvals || [],
-      awardAmount: app.awardAmount || app.award_amount,
-      contractFileName: app.contractFileName || app.contract_file_name,
-      awardLetterGenerated: app.awardLetterGenerated || app.award_letter_generated,
-      revisionCount: app.revisionCount || app.revision_count || 0,
-      originalSubmissionDate: app.originalSubmissionDate || app.original_submission_date,
-      proposalFileName: app.proposalFileName || app.proposal_file_name
-    }));
+    const applications = mapApplicationsList(response);
     
     console.log(`Successfully fetched ${applications.length} user applications from backend`);
     return applications;
@@ -234,28 +140,7 @@ export const submitApplication = async (applicationData: {
     console.log('Backend response:', submittedApp);
     
     // Convert backend response to frontend Application interface
-    const application: Application = {
-      id: submittedApp.id,
-      grantId: submittedApp.grantId || submittedApp.grant_id,
-      applicantName: submittedApp.applicantName || submittedApp.applicant_name,
-      email: submittedApp.email,
-      proposalTitle: submittedApp.proposalTitle || submittedApp.proposal_title,
-      status: submittedApp.status || 'submitted',
-      submissionDate: submittedApp.submissionDate || submittedApp.submission_date || new Date().toISOString(),
-      reviewComments: submittedApp.reviewComments || submittedApp.review_comments || '',
-      biodata: submittedApp.biodata,
-      deadline: submittedApp.deadline,
-      isEditable: submittedApp.isEditable || false,
-      assignedReviewers: submittedApp.assignedReviewers || [],
-      reviewerFeedback: submittedApp.reviewerFeedback || [],
-      signOffApprovals: submittedApp.signOffApprovals || [],
-      awardAmount: submittedApp.awardAmount,
-      contractFileName: submittedApp.contractFileName,
-      awardLetterGenerated: submittedApp.awardLetterGenerated || false,
-      revisionCount: submittedApp.revisionCount || 0,
-      originalSubmissionDate: submittedApp.originalSubmissionDate,
-      proposalFileName: submittedApp.proposalFileName || submittedApp.proposal_file_name
-    };
+    const application: Application = mapApplicationResponse(submittedApp);
 
     console.log('Converted application:', application);
     return application;
@@ -299,28 +184,7 @@ export const updateApplicationStatus = async (id: string, status: Application['s
     console.log('Application status updated successfully:', response);
     
     // Convert backend response to frontend Application interface
-    const application: Application = {
-      id: response.id,
-      grantId: response.grantId || response.grant_id,
-      applicantName: response.applicantName || response.applicant_name,
-      email: response.email,
-      proposalTitle: response.proposalTitle || response.proposal_title,
-      status: response.status,
-      submissionDate: response.submissionDate || response.submission_date,
-      reviewComments: response.reviewComments || response.review_comments || '',
-      biodata: response.biodata,
-      deadline: response.deadline,
-      isEditable: response.isEditable || response.is_editable,
-      assignedReviewers: response.assignedReviewers || response.assigned_reviewers || [],
-      reviewerFeedback: response.reviewerFeedback || response.reviewer_feedback || [],
-      signOffApprovals: response.signOffApprovals || response.sign_off_approvals || [],
-      awardAmount: response.awardAmount || response.award_amount,
-      contractFileName: response.contractFileName || response.contract_file_name,
-      awardLetterGenerated: response.awardLetterGenerated || response.award_letter_generated,
-      revisionCount: response.revisionCount || response.revision_count || 0,
-      originalSubmissionDate: response.originalSubmissionDate || response.original_submission_date,
-      proposalFileName: response.proposalFileName || response.proposal_file_name
-    };
+    const application: Application = mapApplicationResponse(response);
     
     return application;
   } catch (error: any) {
@@ -352,28 +216,7 @@ export const withdrawApplication = async (id: string): Promise<Application> => {
     console.log('Application withdrawn successfully:', response);
     
     // Convert backend response to frontend Application interface
-    const application: Application = {
-      id: response.id,
-      grantId: response.grantId || response.grant_id,
-      applicantName: response.applicantName || response.applicant_name,
-      email: response.email,
-      proposalTitle: response.proposalTitle || response.proposal_title,
-      status: response.status,
-      submissionDate: response.submissionDate || response.submission_date,
-      reviewComments: response.reviewComments || response.review_comments || '',
-      biodata: response.biodata,
-      deadline: response.deadline,
-      isEditable: response.isEditable || response.is_editable,
-      assignedReviewers: response.assignedReviewers || response.assigned_reviewers || [],
-      reviewerFeedback: response.reviewerFeedback || response.reviewer_feedback || [],
-      signOffApprovals: response.signOffApprovals || response.sign_off_approvals || [],
-      awardAmount: response.awardAmount || response.award_amount,
-      contractFileName: response.contractFileName || response.contract_file_name,
-      awardLetterGenerated: response.awardLetterGenerated || response.award_letter_generated,
-      revisionCount: response.revisionCount || response.revision_count || 0,
-      originalSubmissionDate: response.originalSubmissionDate || response.original_submission_date,
-      proposalFileName: response.proposalFileName || response.proposal_file_name
-    };
+    const application: Application = mapApplicationResponse(response);
     
     return application;
   } catch (error: any) {
@@ -408,28 +251,7 @@ export const markApplicationEditable = async (id: string): Promise<Application> 
     console.log('Application marked as editable successfully:', response);
     
     // Convert backend response to frontend Application interface
-    const application: Application = {
-      id: response.id,
-      grantId: response.grantId || response.grant_id,
-      applicantName: response.applicantName || response.applicant_name,
-      email: response.email,
-      proposalTitle: response.proposalTitle || response.proposal_title,
-      status: response.status,
-      submissionDate: response.submissionDate || response.submission_date,
-      reviewComments: response.reviewComments || response.review_comments || '',
-      biodata: response.biodata,
-      deadline: response.deadline,
-      isEditable: response.isEditable || response.is_editable,
-      assignedReviewers: response.assignedReviewers || response.assigned_reviewers || [],
-      reviewerFeedback: response.reviewerFeedback || response.reviewer_feedback || [],
-      signOffApprovals: response.signOffApprovals || response.sign_off_approvals || [],
-      awardAmount: response.awardAmount || response.award_amount,
-      contractFileName: response.contractFileName || response.contract_file_name,
-      awardLetterGenerated: response.awardLetterGenerated || response.award_letter_generated,
-      revisionCount: response.revisionCount || response.revision_count || 0,
-      originalSubmissionDate: response.originalSubmissionDate || response.original_submission_date,
-      proposalFileName: response.proposalFileName || response.proposal_file_name
-    };
+    const application: Application = mapApplicationResponse(response);
     
     return application;
   } catch (error: any) {
@@ -464,28 +286,7 @@ export const resubmitApplication = async (id: string): Promise<Application> => {
     console.log('Application resubmitted successfully:', response);
     
     // Convert backend response to frontend Application interface
-    const application: Application = {
-      id: response.id,
-      grantId: response.grantId || response.grant_id,
-      applicantName: response.applicantName || response.applicant_name,
-      email: response.email,
-      proposalTitle: response.proposalTitle || response.proposal_title,
-      status: response.status,
-      submissionDate: response.submissionDate || response.submission_date,
-      reviewComments: response.reviewComments || response.review_comments || '',
-      biodata: response.biodata,
-      deadline: response.deadline,
-      isEditable: response.isEditable || response.is_editable,
-      assignedReviewers: response.assignedReviewers || response.assigned_reviewers || [],
-      reviewerFeedback: response.reviewerFeedback || response.reviewer_feedback || [],
-      signOffApprovals: response.signOffApprovals || response.sign_off_approvals || [],
-      awardAmount: response.awardAmount || response.award_amount,
-      contractFileName: response.contractFileName || response.contract_file_name,
-      awardLetterGenerated: response.awardLetterGenerated || response.award_letter_generated,
-      revisionCount: response.revisionCount || response.revision_count || 0,
-      originalSubmissionDate: response.originalSubmissionDate || response.original_submission_date,
-      proposalFileName: response.proposalFileName || response.proposal_file_name
-    };
+    const application: Application = mapApplicationResponse(response);
     
     return application;
   } catch (error: any) {
