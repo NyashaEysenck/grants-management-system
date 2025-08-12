@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getAllCalls, createCall, updateCall, toggleCallStatus, GrantCall } from '../services/grantCallsService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,9 +29,10 @@ const callFormSchema = z.object({
 type CallFormData = z.infer<typeof callFormSchema>;
 
 const CallManagement = () => {
-  const [calls, setCalls] = useState<GrantCall[]>(getAllCalls());
+  const [calls, setCalls] = useState<GrantCall[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<GrantCall | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const form = useForm<CallFormData>({
     resolver: zodResolver(callFormSchema),
@@ -46,60 +47,83 @@ const CallManagement = () => {
     },
   });
 
-  const handleCreateCall = (data: CallFormData) => {
-    const newCall = createCall({
-      title: data.title,
-      type: data.type,
-      sponsor: data.sponsor,
-      deadline: data.deadline,
-      scope: data.scope,
-      eligibility: data.eligibility,
-      requirements: data.requirements,
-      status: 'Open',
-      visibility: 'Public',
-    });
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const list = await getAllCalls();
+        setCalls(list);
+      } catch (e: any) {
+        console.error('Failed to load grant calls', e);
+        toast({ title: 'Error', description: e.message || 'Failed to load grant calls', variant: 'destructive' });
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
-    setCalls(prev => [...prev, newCall]);
-    setIsCreateDialogOpen(false);
-    form.reset();
-    toast({
-      title: 'Success',
-      description: 'Grant call created successfully',
-    });
+  const handleCreateCall = async (data: CallFormData) => {
+    try {
+      const newCall = await createCall({
+        title: data.title,
+        type: data.type,
+        sponsor: data.sponsor,
+        deadline: data.deadline,
+        scope: data.scope,
+        eligibility: data.eligibility,
+        requirements: data.requirements,
+        status: 'Open',
+        visibility: 'Public',
+      });
+
+      setCalls(prev => [...prev, newCall]);
+      setIsCreateDialogOpen(false);
+      form.reset();
+      toast({
+        title: 'Success',
+        description: 'Grant call created successfully',
+      });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message || 'Failed to create call', variant: 'destructive' });
+    }
   };
 
-  const handleEditCall = (data: CallFormData) => {
+  const handleEditCall = async (data: CallFormData) => {
     if (!editingCall) return;
+    try {
+      const updated = await updateCall(editingCall.id, {
+        title: data.title,
+        type: data.type,
+        sponsor: data.sponsor,
+        deadline: data.deadline,
+        scope: data.scope,
+        eligibility: data.eligibility,
+        requirements: data.requirements,
+      });
 
-    const success = updateCall(editingCall.id, {
-      title: data.title,
-      type: data.type,
-      sponsor: data.sponsor,
-      deadline: data.deadline,
-      scope: data.scope,
-      eligibility: data.eligibility,
-      requirements: data.requirements,
-    });
-
-    if (success) {
-      setCalls(getAllCalls());
+      setCalls(prev => prev.map(c => (c.id === updated.id ? updated : c)));
       setEditingCall(null);
       form.reset();
       toast({
         title: 'Success',
         description: 'Grant call updated successfully',
       });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message || 'Failed to update call', variant: 'destructive' });
     }
   };
 
-  const handleToggleCallStatus = (callId: string) => {
-    const success = toggleCallStatus(callId);
-    if (success) {
-      setCalls(getAllCalls());
+  const handleToggleCallStatus = async (callId: string) => {
+    try {
+      const updated = await toggleCallStatus(callId);
+      setCalls(prev => prev.map(c => (c.id === updated.id ? updated : c)));
       toast({
         title: 'Success',
         description: 'Call status updated successfully',
       });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message || 'Failed to toggle status', variant: 'destructive' });
     }
   };
 
@@ -122,6 +146,9 @@ const CallManagement = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {loading && (
+        <div className="text-center py-4 text-gray-600">Loading calls...</div>
+      )}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Call Management</h1>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

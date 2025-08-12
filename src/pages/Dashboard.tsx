@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getOpenCalls, getAllCalls } from '../services/grantCallsService';
+import { getOpenCalls, getAllCalls, type GrantCall } from '../services/grantCallsService';
 import { getAllApplications } from '../services/applicationsService';
 import { getAllProjects } from '../services/projectsService';
 import { Calendar, Building, Tag, AlertTriangle, Users, FileText, Award, Clock, CheckCircle, DollarSign, Search, Filter } from 'lucide-react';
@@ -23,25 +23,30 @@ const Dashboard = () => {
 
   // Grants Manager Dashboard Logic
   if (isGrantsManager) {
-    const allCalls = getAllCalls();
+    const [allCalls, setAllCalls] = useState<GrantCall[]>([]);
     const [allApplications, setAllApplications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const allProjects = getAllProjects();
 
     useEffect(() => {
-      const loadApplications = async () => {
+      const loadData = async () => {
         try {
           setLoading(true);
-          const applications = await getAllApplications();
+          const [calls, applications] = await Promise.all([
+            getAllCalls(),
+            getAllApplications(),
+          ]);
+          setAllCalls(calls);
           setAllApplications(applications);
         } catch (error) {
           console.error('Error loading applications:', error);
           setAllApplications([]);
+          setAllCalls([]);
         } finally {
           setLoading(false);
         }
       };
-      loadApplications();
+      loadData();
     }, []);
 
     // Calculate metrics
@@ -255,7 +260,24 @@ const Dashboard = () => {
 
   // Researcher Dashboard with search and filter
   if (isResearcher) {
-    const openCalls = getOpenCalls();
+    const [openCalls, setOpenCalls] = useState<GrantCall[]>([]);
+    const [loadingCalls, setLoadingCalls] = useState<boolean>(true);
+
+    useEffect(() => {
+      const loadOpenCalls = async () => {
+        try {
+          setLoadingCalls(true);
+          const calls = await getOpenCalls();
+          setOpenCalls(calls);
+        } catch (e) {
+          console.error('Failed to load open calls', e);
+          setOpenCalls([]);
+        } finally {
+          setLoadingCalls(false);
+        }
+      };
+      loadOpenCalls();
+    }, []);
 
     // Get unique types and sponsors for filter options
     const availableTypes = useMemo(() => {
