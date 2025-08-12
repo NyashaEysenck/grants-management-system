@@ -96,7 +96,7 @@ const Dashboard = () => {
         </div>
 
         {/* Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/call-management')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Posted Calls</CardTitle>
@@ -323,9 +323,9 @@ const Dashboard = () => {
               </div>
 
               {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex gap-3">
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-full sm:w-48">
+                  <SelectTrigger className="w-48">
                     <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="All Types" />
                   </SelectTrigger>
@@ -340,7 +340,7 @@ const Dashboard = () => {
                 </Select>
 
                 <Select value={sponsorFilter} onValueChange={setSponsorFilter}>
-                  <SelectTrigger className="w-full sm:w-48">
+                  <SelectTrigger className="w-48">
                     <Building className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="All Sponsors" />
                   </SelectTrigger>
@@ -355,7 +355,7 @@ const Dashboard = () => {
                 </Select>
 
                 {(searchQuery || typeFilter !== 'all' || sponsorFilter !== 'all') && (
-                  <Button variant="outline" onClick={clearFilters} className="w-full sm:w-auto">
+                  <Button variant="outline" onClick={clearFilters}>
                     Clear Filters
                   </Button>
                 )}
@@ -391,7 +391,7 @@ const Dashboard = () => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCalls.map((call) => (
               <Card key={call.id} className="hover:shadow-lg transition-shadow duration-200">
                 <CardHeader>

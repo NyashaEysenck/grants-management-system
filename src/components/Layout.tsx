@@ -24,40 +24,38 @@ export function Layout({ children }: LayoutProps) {
         
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-4 md:px-6">
-            <div className="flex items-center gap-2 md:gap-4">
+          <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-6">
+            <div className="flex items-center gap-4">
               <SidebarTrigger className="md:hidden">
                 <Menu className="h-5 w-5" />
               </SidebarTrigger>
-              <h1 className="text-lg md:text-xl font-semibold text-gray-900 truncate">
+              <h1 className="text-xl font-semibold text-gray-900">
                 Grants Management System
               </h1>
             </div>
             
-            <div className="flex items-center gap-2 md:gap-4">
-              <span className="hidden sm:block text-sm text-gray-600 truncate">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">
                 Welcome, {user?.name}
               </span>
-              <div className="inline-flex items-center px-2 md:px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
                 {user?.role}
               </div>
               <Button
                 onClick={handleLogout}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-1 md:gap-2"
+                className="flex items-center gap-2"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
+                Logout
               </Button>
             </div>
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 p-4 md:p-6 max-w-full overflow-x-hidden">
-            <div className="max-w-7xl mx-auto">
-              {children}
-            </div>
+          <main className="flex-1 p-6">
+            {children}
           </main>
         </div>
       </div>
