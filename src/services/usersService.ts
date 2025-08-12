@@ -79,36 +79,6 @@ class UsersService {
       return false;
     }
   }
-
-  async getUserCountByRole(): Promise<Record<string, number>> {
-    try {
-      return await apiClient.get<Record<string, number>>('/users/count-by-role');
-    } catch (error) {
-      console.error('Error fetching user count by role:', error);
-      return {};
-    }
-  }
-
-  async getUserCountByStatus(): Promise<Record<string, number>> {
-    try {
-      return await apiClient.get<Record<string, number>>('/users/count-by-status');
-    } catch (error) {
-      console.error('Error fetching user count by status:', error);
-      return {};
-    }
-  }
-
-  getUserCountByRoleAndStatus(): Record<string, number> {
-    // This is a placeholder that returns empty counts
-    // In a real implementation, this would calculate from the users data
-    return {
-      active: 0,
-      inactive: 0,
-      Admin: 0,
-      'Grants Manager': 0,
-      Researcher: 0
-    };
-  }
 }
 
 export const usersService = new UsersService();

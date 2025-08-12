@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usersService, User } from '../services/usersService';
+import { usersService, User, UserCreate, UserUpdate } from '../services/usersService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,11 +10,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { useForm } from 'react-hook-form';
+import { useToast } from '@/components/ui/use-toast';
+import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Edit, Trash2, RotateCcw, Users, UserCheck, UserX } from 'lucide-react';
+import { Plus, Edit, Trash2, RotateCcw } from 'lucide-react';
 
 const userSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -26,22 +26,15 @@ const userSchema = z.object({
 type UserFormData = z.infer<typeof userSchema>;
 
 const UserManagement = () => {
-  console.log('🏗️ UserManagement component mounting');
-  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading } = useQuery<User[], Error>({
     queryKey: ['users'],
-    queryFn: () => {
-      console.log('🔄 React Query executing getAllUsers');
-      return usersService.getAllUsers();
-    },
+    queryFn: () => usersService.getAllUsers(),
   });
-  
-  console.log('📊 UserManagement state:', { usersCount: users.length, isLoading });
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
@@ -53,286 +46,87 @@ const UserManagement = () => {
     },
   });
 
-  const createUserMutation = useMutation({
-    mutationFn: (userData: UserFormData) => {
-      const userDataWithPassword = {
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
-        status: userData.status,
-        password: 'temp123'
-      };
-      return usersService.createUser(userDataWithPassword);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast({
-        title: 'Success',
-        description: 'User created successfully',
-      });
-      setIsDialogOpen(false);
-      form.reset();
-    },
-    onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to create user',
-        variant: 'destructive',
-      });
-    },
+  const handleMutationSuccess = (message: string) => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+    toast({ title: 'Success', description: message });
+    setIsDialogOpen(false);
+    setEditingUser(null);
+    form.reset();
+  };
+
+  const handleMutationError = (error: Error, defaultMessage: string) => {
+    toast({ title: 'Error', description: error.message || defaultMessage, variant: 'destructive' });
+  };
+
+  const createUserMutation = useMutation<User, Error, UserCreate>({
+    mutationFn: (userData: UserCreate) => usersService.createUser(userData),
+    onSuccess: () => handleMutationSuccess('User created successfully.'),
+    onError: (error) => handleMutationError(error, 'Failed to create user.'),
   });
 
-  const updateUserMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<UserFormData> }) =>
-      usersService.updateUser(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast({
-        title: 'Success',
-        description: 'User updated successfully',
-      });
-      setIsDialogOpen(false);
-      setEditingUser(null);
-      form.reset();
-    },
-    onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to update user',
-        variant: 'destructive',
-      });
-    },
+  const updateUserMutation = useMutation<User | null, Error, { id: string; data: UserUpdate }>({
+    mutationFn: ({ id, data }) => usersService.updateUser(id, data),
+    onSuccess: () => handleMutationSuccess('User updated successfully.'),
+    onError: (error) => handleMutationError(error, 'Failed to update user.'),
   });
 
-  const deleteUserMutation = useMutation({
+  const deleteUserMutation = useMutation<boolean, Error, string>({
     mutationFn: (id: string) => usersService.deleteUser(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast({
-        title: 'Success',
-        description: 'User deleted successfully',
-      });
-    },
-    onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete user',
-        variant: 'destructive',
-      });
-    },
+    onSuccess: () => handleMutationSuccess('User deleted successfully.'),
+    onError: (error) => handleMutationError(error, 'Failed to delete user.'),
   });
 
-  const resetPasswordMutation = useMutation({
+  const resetPasswordMutation = useMutation<boolean, Error, string>({
     mutationFn: (id: string) => usersService.resetUserPassword(id),
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Password reset successfully',
-      });
-    },
-    onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to reset password',
-        variant: 'destructive',
-      });
-    },
+    onSuccess: () => handleMutationSuccess('Password reset successfully.'),
+    onError: (error) => handleMutationError(error, 'Failed to reset password.'),
   });
 
   const handleSubmit = (data: UserFormData) => {
     if (editingUser) {
       updateUserMutation.mutate({ id: editingUser.id, data });
     } else {
-      createUserMutation.mutate(data);
+      const userDataWithPassword = { ...data, password: 'tempPassword123!' };
+      createUserMutation.mutate(userDataWithPassword);
     }
   };
 
   const handleEdit = (user: User) => {
     setEditingUser(user);
-    form.reset({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-    });
+    form.reset(user);
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    deleteUserMutation.mutate(id);
-  };
-
-  const handleResetPassword = (id: string) => {
-    resetPasswordMutation.mutate(id);
-  };
-
-  const roleColors = {
+  const roleColors: { [key: string]: string } = {
     Admin: 'bg-red-100 text-red-800',
     'Grants Manager': 'bg-blue-100 text-blue-800',
     Researcher: 'bg-green-100 text-green-800',
   };
 
-  const statusColors = {
-    active: 'bg-green-100 text-green-800',
-    inactive: 'bg-gray-100 text-gray-800',
+  const statusColors: { [key: string]: 'active' | 'inactive' } = {
+    active: 'active',
+    inactive: 'inactive',
   };
 
-  // Calculate summary statistics
-  const userCounts = usersService.getUserCountByRoleAndStatus();
-
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">User Management</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingUser(null);
-              form.reset();
-            }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add User
+            <Button onClick={() => { setEditingUser(null); form.reset(); }}>
+              <Plus className="mr-2 h-4 w-4" /> Add User
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {editingUser ? 'Edit User' : 'Add New User'}
-              </DialogTitle>
+              <DialogTitle>{editingUser ? 'Edit User' : 'Add New User'}</DialogTitle>
             </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter full name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Enter email address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="Grants Manager">Grants Manager</SelectItem>
-                          <SelectItem value="Researcher">Researcher</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={createUserMutation.isPending || updateUserMutation.isPending}
-                  >
-                    {editingUser ? 'Update' : 'Create'} User
-                  </Button>
-                </div>
-              </form>
-            </Form>
+            <UserForm form={form} onSubmit={handleSubmit} isSubmitting={createUserMutation.isPending || updateUserMutation.isPending} />
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{users.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-            <UserCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{userCounts?.active || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inactive Users</CardTitle>
-            <UserX className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{userCounts?.inactive || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Admins</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{userCounts?.Admin || 0}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Users Table */}
       <Card>
         <CardHeader>
           <CardTitle>Users</CardTitle>
@@ -358,12 +152,12 @@ const UserManagement = () => {
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Badge className={roleColors[user.role as keyof typeof roleColors] || 'bg-gray-100 text-gray-800'}>
+                      <Badge className={roleColors[user.role] || 'bg-gray-100 text-gray-800'}>
                         {user.role}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={statusColors[user.status]}>
+                      <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
                         {user.status}
                       </Badge>
                     </TableCell>
