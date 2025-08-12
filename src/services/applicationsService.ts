@@ -1,6 +1,7 @@
 import applicationsData from '../data/applications.json';
 import { DataStorage } from '../utils/dataStorage';
 import { apiClient } from '../lib/api';
+import axios from 'axios';
 
 export interface ResearcherBiodata {
   name: string;
@@ -207,7 +208,9 @@ export const submitApplication = async (applicationData: {
     console.log('Submitting application with data:', applicationData);
     
     // Use API client for consistent authentication and error handling
-    const submittedApp = await apiClient.post('/applications', {
+    // Note: FastAPI route is defined at "/applications/" (with trailing slash). Using the
+    // trailing slash avoids a 307 redirect on POST that can cause connection reset behind proxies.
+    const submittedApp = await apiClient.post('/applications/', {
       grantId: applicationData.grantId,
       applicantName: applicationData.applicantName,
       email: applicationData.email,
@@ -234,12 +237,12 @@ export const submitApplication = async (applicationData: {
     const application: Application = {
       id: submittedApp.id,
       grantId: submittedApp.grantId || submittedApp.grant_id,
-      applicantName: submittedApp.applicantName || submittedApp.researcher_name,
+      applicantName: submittedApp.applicantName || submittedApp.applicant_name,
       email: submittedApp.email,
-      proposalTitle: submittedApp.proposalTitle || submittedApp.title,
+      proposalTitle: submittedApp.proposalTitle || submittedApp.proposal_title,
       status: submittedApp.status || 'submitted',
-      submissionDate: submittedApp.submissionDate || submittedApp.submitted_at || new Date().toISOString(),
-      reviewComments: submittedApp.reviewComments || '',
+      submissionDate: submittedApp.submissionDate || submittedApp.submission_date || new Date().toISOString(),
+      reviewComments: submittedApp.reviewComments || submittedApp.review_comments || '',
       biodata: submittedApp.biodata,
       deadline: submittedApp.deadline,
       isEditable: submittedApp.isEditable || false,
@@ -251,13 +254,21 @@ export const submitApplication = async (applicationData: {
       awardLetterGenerated: submittedApp.awardLetterGenerated || false,
       revisionCount: submittedApp.revisionCount || 0,
       originalSubmissionDate: submittedApp.originalSubmissionDate,
-      proposalFileName: submittedApp.proposalFileName
+      proposalFileName: submittedApp.proposalFileName || submittedApp.proposal_file_name
     };
 
     console.log('Converted application:', application);
     return application;
   } catch (error) {
     console.error('Error submitting application:', error);
+    // Extra diagnostics for Axios errors
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const data = error.response?.data;
+      if (status || data) {
+        console.error('Submission failed with status/data:', status, data);
+      }
+    }
     
     // Provide more specific error messages
     if (error instanceof Error) {
