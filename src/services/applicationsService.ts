@@ -199,6 +199,9 @@ export const submitApplication = async (applicationData: {
   timeline?: string;
   biodata?: ResearcherBiodata;
   proposalFileName?: string;
+  proposalFileData?: string;
+  proposalFileSize?: number;
+  proposalFileType?: string;
 }): Promise<Application> => {
   try {
     console.log('Submitting application with data:', applicationData);
@@ -219,7 +222,10 @@ export const submitApplication = async (applicationData: {
       budgetJustification: applicationData.budgetJustification || '',
       timeline: applicationData.timeline || '',
       biodata: applicationData.biodata,
-      proposalFileName: applicationData.proposalFileName
+      proposalFileName: applicationData.proposalFileName,
+      proposalFileData: applicationData.proposalFileData,
+      proposalFileSize: applicationData.proposalFileSize,
+      proposalFileType: applicationData.proposalFileType
     });
     
     console.log('Backend response:', submittedApp);
