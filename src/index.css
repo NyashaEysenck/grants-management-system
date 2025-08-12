@@ -2,112 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Clean Institutional Red Color Scheme */
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
 @layer base {
   :root {
-    /* Primary institutional red */
-    --primary: 0 100% 35%;            /* Institutional red #B30000 */
-    --primary-foreground: 0 0% 100%;  /* White text */
-    --primary-hover: 0 100% 30%;      /* Darker red on hover */
-    
-    /* Clean backgrounds */
-    --background: 0 0% 100%;          /* Pure white */
-    --foreground: 0 0% 0%;            /* Pure black text */
-    
-    /* Light gray accents */
-    --secondary: 0 0% 96%;            /* Light gray background */
-    --secondary-foreground: 0 0% 0%;  /* Black text */
-    
-    /* Muted tones */
-    --muted: 0 0% 96%;                /* Light gray */
-    --muted-foreground: 0 0% 45%;     /* Gray text */
-    
-    /* Accent neutral */
-    --accent: 0 0% 96%;               /* Light gray accent */
-    --accent-foreground: 0 0% 0%;     /* Black text */
-    
-    /* Destructive states */
-    --destructive: 0 84% 60%;         /* Bright red for errors */
-    --destructive-foreground: 0 0% 100%; /* White text */
-    
-    /* Border and ring colors */
-    --border: 0 0% 90%;               /* Light gray border */
-    --input: 0 0% 100%;               /* White input background */
-    --ring: 0 100% 35%;               /* Red focus ring */
-    
-    /* Card styling */
-    --card: 0 0% 100%;                /* White cards */
-    --card-foreground: 0 0% 0%;       /* Black text */
-    
-    /* Popover styling */
-    --popover: 0 0% 100%;             /* White popover */
-    --popover-foreground: 0 0% 0%;    /* Black text */
-    
-    /* Sidebar styling */
-    --sidebar-background: 0 100% 35%; /* Red sidebar */
-    --sidebar-foreground: 0 0% 100%;  /* White text */
-    --sidebar-primary: 0 100% 30%;    /* Darker red */
-    --sidebar-primary-foreground: 0 0% 100%; /* White text */
-    --sidebar-accent: 0 100% 30%;     /* Darker red accent */
-    --sidebar-accent-foreground: 0 0% 100%; /* White text */
-    --sidebar-border: 0 100% 25%;     /* Dark red border */
-    --sidebar-ring: 0 100% 35%;       /* Red focus ring */
-    
-    /* Clean shadows */
-    --shadow-elegant: 0 4px 20px -4px hsl(0 0% 0% / 0.1);
-    --shadow-card: 0 2px 8px -2px hsl(0 0% 0% / 0.1);
-    
-    /* Border radius */
-    --radius: 0.375rem;
-    
-    /* Smooth transitions */
-    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    /* Dark mode with red accents */
-    --background: 0 0% 3%;            /* Very dark background */
-    --foreground: 0 0% 98%;           /* Light text */
-    
-    --card: 0 0% 5%;                  /* Dark cards */
-    --card-foreground: 0 0% 98%;      /* Light text */
-    
-    --popover: 0 0% 5%;               /* Dark popover */
-    --popover-foreground: 0 0% 98%;   /* Light text */
-    
-    --primary: 0 100% 35%;            /* Same red in dark */
-    --primary-foreground: 0 0% 100%;  /* White text */
-    --primary-hover: 0 100% 40%;      /* Lighter red on hover */
-    
-    --secondary: 0 0% 10%;            /* Dark secondary */
-    --secondary-foreground: 0 0% 98%; /* Light text */
-    
-    --muted: 0 0% 10%;                /* Dark muted */
-    --muted-foreground: 0 0% 65%;     /* Muted text */
-    
-    --accent: 0 0% 10%;               /* Dark accent */
-    --accent-foreground: 0 0% 98%;    /* Light text */
-    
-    --destructive: 0 62% 50%;         /* Red */
-    --destructive-foreground: 0 0% 98%; /* White */
-    
-    --border: 0 0% 15%;               /* Dark border */
-    --input: 0 0% 15%;                /* Dark input */
-    --ring: 0 100% 35%;               /* Red focus ring */
-    
-    /* Dark sidebar */
-    --sidebar-background: 0 0% 5%;    /* Very dark sidebar */
-    --sidebar-foreground: 0 0% 98%;   /* Light text */
-    --sidebar-primary: 0 100% 35%;    /* Red accents */
-    --sidebar-primary-foreground: 0 0% 100%; /* White text */
-    --sidebar-accent: 0 100% 35%;     /* Red accent */
-    --sidebar-accent-foreground: 0 0% 100%; /* White text */
-    --sidebar-border: 0 0% 10%;       /* Dark border */
-    --sidebar-ring: 0 100% 35%;       /* Red ring */
-    
-    /* Dark shadows */
-    --shadow-elegant: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
-    --shadow-card: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -115,76 +98,8 @@
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-feature-settings: "cv11", "ss01";
-    font-variation-settings: "opsz" 32;
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
-    font-weight: 600;
-  }
-}
-
-/* Custom components */
-@layer components {
-  .flat-card {
-    @apply bg-card border border-border;
-    box-shadow: var(--shadow-card);
-  }
-  
-  .institutional-shadow {
-    box-shadow: var(--shadow-elegant);
-  }
-  
-  .card-shadow {
-    box-shadow: var(--shadow-card);
-  }
-  
-  .smooth-transition {
-    transition: var(--transition-smooth);
-  }
-  
-  .institutional-header {
-    @apply bg-primary text-primary-foreground;
-  }
-  
-  .text-institutional {
-    @apply font-inter text-foreground font-medium;
-  }
-  
-  .btn-institutional {
-    @apply bg-primary hover:bg-primary-hover text-primary-foreground rounded px-6 py-3 font-semibold smooth-transition border-0;
-  }
-  
-  .btn-secondary-institutional {
-    @apply bg-secondary hover:bg-muted text-secondary-foreground rounded px-6 py-3 font-semibold smooth-transition border border-border;
-  }
-}
-
-/* Animation utilities */
-@layer utilities {
-  .animate-gradient {
-    background-size: 200% 200%;
-    animation: gradient 3s ease infinite;
-  }
-  
-  @keyframes gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-  
-  .hover-lift {
-    @apply hover:scale-105 hover:-translate-y-1;
-    @apply smooth-transition;
-  }
-  
-  .hover-glow {
-    @apply hover:glow-shadow;
-    @apply smooth-transition;
   }
 }
