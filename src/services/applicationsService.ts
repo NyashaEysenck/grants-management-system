@@ -481,22 +481,60 @@ export const storeReviewToken = (applicationId: string, token: string): void => 
   localStorage.setItem('review-tokens', JSON.stringify(storedTokens));
 };
 
-export const updateApplicationForRevision = async (id: string, newProposalTitle: string, newProposalFile: string): Promise<Application> => {
+export const updateApplicationForRevision = async (
+  id: string,
+  newProposalTitle: string,
+  newFile?: File,
+  revisionNotes?: string,
+  onProgress?: (percent: number) => void
+): Promise<Application> => {
   try {
     console.log(`Updating application ${id} for revision`);
     console.log('New proposal title:', newProposalTitle);
-    console.log('New proposal file:', newProposalFile);
-    
-    // Update application data and resubmit in single API call
-    const response = await apiClient.put(`/applications/${id}`, {
+    if (newFile) console.log('New file selected:', newFile.name, newFile.type, newFile.size);
+
+    // Helper to convert File -> base64 string (no prefix)
+    const fileToBase64 = (file: File): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64 = result.split(',')[1] || result; // strip data:...;base64,
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+    let payload: any = {
       proposalTitle: newProposalTitle,
-      proposalFileName: newProposalFile,
       status: 'submitted',
-      revisionNotes: 'Application revised and resubmitted by researcher'
+      revisionNotes: revisionNotes || 'Application revised and resubmitted by researcher',
+    };
+
+    if (newFile) {
+      const base64 = await fileToBase64(newFile);
+      payload = {
+        ...payload,
+        proposalFileName: newFile.name,
+        proposalFileData: base64,
+        proposalFileSize: newFile.size,
+        proposalFileType: newFile.type || 'application/octet-stream',
+      };
+    }
+
+    // Send update; progress callback if provided
+    const response = await apiClient.put(`/applications/${id}`, payload, {
+      onUploadProgress: (evt) => {
+        if (onProgress && evt.total) {
+          const percent = Math.round((evt.loaded * 100) / evt.total);
+          onProgress(percent);
+        }
+      },
     });
-    
+
     console.log('Application updated and resubmitted:', response);
-    
+
     // Convert backend response to frontend Application interface
     const application: Application = {
       id: response.id,
@@ -518,9 +556,9 @@ export const updateApplicationForRevision = async (id: string, newProposalTitle:
       awardLetterGenerated: response.awardLetterGenerated || response.award_letter_generated,
       revisionCount: response.revisionCount || response.revision_count || 0,
       originalSubmissionDate: response.originalSubmissionDate || response.original_submission_date,
-      proposalFileName: response.proposalFileName || response.proposal_file_name
+      proposalFileName: response.proposalFileName || response.proposal_file_name,
     };
-    
+
     return application;
   } catch (error: any) {
     console.error('Error updating application for revision:', error);
@@ -528,9 +566,9 @@ export const updateApplicationForRevision = async (id: string, newProposalTitle:
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
-      message: error.message
+      message: error.message,
     });
-    
+
     let errorMessage = 'Failed to update application';
     if (error.response?.status === 401) {
       errorMessage = 'Authentication failed. Please log in again.';
@@ -542,12 +580,12 @@ export const updateApplicationForRevision = async (id: string, newProposalTitle:
       errorMessage = error.response?.data?.detail || 'Cannot update this application.';
     } else if (error.response?.data?.detail) {
       errorMessage = error.response.data.detail;
-    } else if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+    } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
       errorMessage = 'Network error. Please check if the backend server is running.';
     } else if (error.code === 'ECONNREFUSED') {
       errorMessage = 'Cannot connect to server. Please ensure the backend is running on port 8000.';
     }
-    
+
     throw new Error(errorMessage);
   }
 };

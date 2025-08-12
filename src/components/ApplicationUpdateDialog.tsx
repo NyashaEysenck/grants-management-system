@@ -32,6 +32,8 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
   
   const form = useForm<UpdateFormData>({
     defaultValues: {
@@ -50,23 +52,18 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
   };
 
   const onSubmit = async (data: UpdateFormData) => {
-    if (!selectedFile) {
-      toast({
-        title: "File Required",
-        description: "Please upload a revised proposal document.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     console.log('Resubmit button clicked in update dialog for application:', application.id);
     
     try {
+      setIsSubmitting(true);
+      setUploadProgress(0);
       console.log('Calling updateApplicationForRevision...');
       await updateApplicationForRevision(
         application.id,
         data.proposalTitle,
-        data.proposalFile
+        selectedFile || undefined,
+        data.revisionNotes,
+        (pct) => setUploadProgress(pct)
       );
       
       console.log('Application revision update successful');
@@ -83,6 +80,9 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
         description: error.message || "Failed to update application. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
+      setUploadProgress(0);
     }
   };
 
@@ -122,7 +122,10 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
               />
 
               <div className="space-y-2">
-                <Label htmlFor="proposalFile">Updated Proposal Document *</Label>
+                <Label htmlFor="proposalFile">Updated Proposal Document (optional)</Label>
+                <div className="text-sm text-gray-600">
+                  Current file: <span className="font-medium">{application.proposalFileName || 'No file on record'}</span>
+                </div>
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <Input
@@ -137,6 +140,14 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
                 </div>
                 {selectedFile && (
                   <p className="text-sm text-gray-600">Selected: {selectedFile.name}</p>
+                )}
+                {isSubmitting && (
+                  <div className="w-full bg-gray-200 rounded h-2 mt-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
                 )}
               </div>
 
@@ -159,12 +170,12 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
               />
 
               <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={onClose}>
+                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button type="submit" disabled={isSubmitting}>
                   <FileText className="h-4 w-4 mr-2" />
-                  Resubmit Application
+                  {isSubmitting ? 'Submitting…' : 'Resubmit Application'}
                 </Button>
               </div>
             </form>

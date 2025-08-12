@@ -15,13 +15,35 @@ const SystemConfig = () => {
       const result = await resetDatabase();
       toast({
         title: 'Success',
-        description: result.message,
+        description: result?.message || 'Database reset successfully',
         variant: 'default',
       });
     } catch (error: any) {
+      console.error('Error in handleReset:', error);
+      
+      // Handle different error formats
+      let errorMessage = 'An unknown error occurred';
+      
+      if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data) {
+        const { data } = error.response;
+        if (typeof data === 'string') {
+          errorMessage = data;
+        } else if (data?.message) {
+          errorMessage = data.message;
+        } else if (data?.detail) {
+          errorMessage = typeof data.detail === 'string' 
+            ? data.detail 
+            : (data.detail?.message || JSON.stringify(data.detail));
+        }
+      }
+      
       toast({
         title: 'Error',
-        description: error.message,
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

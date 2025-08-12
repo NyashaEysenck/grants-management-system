@@ -11,8 +11,38 @@ class AdminServiceImpl implements AdminService {
       const response = await apiClient.post('/admin/reset-database');
       return response.data;
     } catch (error: any) {
-      console.error('Error resetting database:', error.response?.data?.detail || error.message);
-      throw new Error(error.response?.data?.detail || 'Failed to reset database.');
+      console.error('Error resetting database:', error);
+      
+      // Handle different error response formats
+      let errorMessage = 'Failed to reset database';
+      
+      if (error.response) {
+        // Handle HTTP error responses
+        const { data } = error.response;
+        
+        if (typeof data === 'object' && data !== null) {
+          // Handle standard error format with message
+          if ('message' in data) {
+            errorMessage = data.message;
+          } 
+          // Handle FastAPI HTTPException detail format
+          else if ('detail' in data) {
+            errorMessage = typeof data.detail === 'string' 
+              ? data.detail 
+              : (data.detail?.message || JSON.stringify(data.detail));
+          }
+        } else if (typeof data === 'string') {
+          errorMessage = data;
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorMessage = 'No response from server. Please check your connection.';
+      } else if (error.message) {
+        // Something happened in setting up the request
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
     }
   }
 }

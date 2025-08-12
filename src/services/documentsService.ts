@@ -27,7 +27,7 @@ export interface DocumentFolder {
   accessRoles: string[];
 }
 
-import { apiClient } from '../lib/api';
+import api, { apiClient } from '../lib/api';
 
 class DocumentsService {
   private documents: Document[] = [];
@@ -253,7 +253,8 @@ class DocumentsService {
   // Download application document by filename for grants managers and reviewers
   async downloadApplicationDocument(applicationId: string, filename: string): Promise<void> {
     try {
-      const response = await apiClient.get(`/applications/${applicationId}/document/${encodeURIComponent(filename)}`, {
+      // Use the axios instance directly so we can access headers
+      const response = await api.get(`/applications/${applicationId}/document/${encodeURIComponent(filename)}`, {
         responseType: 'blob',
         timeout: 60000, // 1 minute timeout for large files
       });
