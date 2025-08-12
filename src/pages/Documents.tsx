@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../context/AuthContext';
 import { documentsService, Document, DocumentFolder } from '../services/documentsService';
@@ -48,6 +48,8 @@ const Documents = () => {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
   const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const uploadForm = useForm<UploadFormData>({
     defaultValues: {
@@ -103,7 +105,7 @@ const Documents = () => {
     }
   });
 
-  const handleUpload = (data: UploadFormData) => {
+  const handleUpload = async (data: UploadFormData) => {
     const pendingFile = sessionStorage.getItem('pendingFile');
     if (!pendingFile) {
       toast({
@@ -117,12 +119,17 @@ const Documents = () => {
     const fileInfo = JSON.parse(pendingFile);
     
     try {
-      documentsService.uploadDocument(
+      // Create a dummy file object for the service
+      const dummyFile = {
+        name: fileInfo.name,
+        type: fileInfo.type,
+        size: parseInt(fileInfo.size) || 0
+      } as File;
+      
+      await documentsService.uploadDocument(
         data.name,
         data.folder,
-        fileInfo.name,
-        user.email,
-        fileInfo.size,
+        dummyFile,
         data.notes
       );
 
@@ -134,6 +141,7 @@ const Documents = () => {
       setIsUploadDialogOpen(false);
       uploadForm.reset();
       sessionStorage.removeItem('pendingFile');
+      loadDocuments();
     } catch (error) {
       toast({
         title: "Error",
@@ -143,7 +151,7 @@ const Documents = () => {
     }
   };
 
-  const handleVersionUpload = (data: VersionUploadData) => {
+  const handleVersionUpload = async (data: VersionUploadData) => {
     if (!selectedDocument) return;
 
     const pendingFile = sessionStorage.getItem('pendingFile');
@@ -158,15 +166,20 @@ const Documents = () => {
 
     const fileInfo = JSON.parse(pendingFile);
     
-    const success = documentsService.uploadNewVersion(
-      selectedDocument.id,
-      fileInfo.name,
-      user.email,
-      fileInfo.size,
-      data.notes
-    );
+    try {
+      // Create a dummy file object for the service
+      const dummyFile = {
+        name: fileInfo.name,
+        type: fileInfo.type,
+        size: parseInt(fileInfo.size) || 0
+      } as File;
+      
+      await documentsService.uploadNewVersion(
+        selectedDocument.id,
+        dummyFile,
+        data.notes
+      );
 
-    if (success) {
       toast({
         title: "Success",
         description: "New version uploaded successfully.",
@@ -175,7 +188,8 @@ const Documents = () => {
       setSelectedDocument(null);
       versionForm.reset();
       sessionStorage.removeItem('pendingFile');
-    } else {
+      loadDocuments();
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to upload new version.",
@@ -192,6 +206,7 @@ const Documents = () => {
           title: "Success",
           description: "Document deleted successfully.",
         });
+        loadDocuments();
       } else {
         toast({
           title: "Error",
@@ -213,6 +228,7 @@ const Documents = () => {
         // Refresh selected document
         const updated = documentsService.getDocumentById(documentId);
         setSelectedDocument(updated || null);
+        loadDocuments();
       } else {
         toast({
           title: "Error",
@@ -232,21 +248,37 @@ const Documents = () => {
     });
   };
 
-  const getFilteredDocuments = () => {
+  const getFilteredDocuments = async () => {
     let documents = isRestrictedUser 
       ? documentsService.getDocumentsByUser(user.email)
-      : documentsService.getAllDocuments();
+      : await documentsService.getAllDocuments();
 
     if (selectedFolder !== 'all') {
       documents = documents.filter(doc => doc.folder === selectedFolder);
     }
 
     if (searchQuery.trim()) {
-      documents = documentsService.searchDocuments(searchQuery, user.email, isRestrictedUser);
+      documents = await documentsService.searchDocuments(searchQuery, user.email, isRestrictedUser);
     }
 
     return documents;
   };
+
+  const loadDocuments = async () => {
+    try {
+      const filteredDocs = await getFilteredDocuments();
+      setDocuments(filteredDocs);
+    } catch (error) {
+      console.error('Error loading documents:', error);
+      setDocuments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDocuments();
+  }, [searchQuery, selectedFolder, isRestrictedUser, user.email]);
 
   const getIconComponent = (iconName: string) => {
     const icons: Record<string, any> = {
@@ -259,19 +291,30 @@ const Documents = () => {
   };
 
   const stats = documentsService.getDocumentStats();
-  const filteredDocuments = getFilteredDocuments();
+  const filteredDocuments = documents;
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading documents...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl space-y-6">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Document Center</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Document Center</h1>
           <p className="text-gray-600 mt-2">Manage documents with version control and lifecycle tracking</p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
@@ -318,7 +361,7 @@ const Documents = () => {
       {/* Search and Filter */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
@@ -329,7 +372,7 @@ const Documents = () => {
               />
             </div>
             <Select value={selectedFolder} onValueChange={(value: any) => setSelectedFolder(value)}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Filter by folder" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
@@ -357,37 +400,31 @@ const Documents = () => {
               <p className="text-gray-600">No documents found</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Folder</TableHead>
-                  <TableHead>Version</TableHead>
-                  <TableHead>Last Modified</TableHead>
-                  <TableHead>Created By</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile Card View */}
+              <div className="block md:hidden space-y-4">
                 {filteredDocuments.map((document) => (
-                  <TableRow key={document.id}>
-                    <TableCell className="font-medium">{document.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{document.folder}</Badge>
-                    </TableCell>
-                    <TableCell>v{document.currentVersion}</TableCell>
-                    <TableCell>
-                      {format(new Date(document.lastModified), 'MMM dd, yyyy HH:mm')}
-                    </TableCell>
-                    <TableCell>{document.createdBy}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
+                  <Card key={document.id} className="p-4">
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="font-medium">{document.name}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline">{document.folder}</Badge>
+                          <span className="text-sm text-gray-500">v{document.currentVersion}</span>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <p>Modified: {format(new Date(document.lastModified), 'MMM dd, yyyy')}</p>
+                        <p>Created by: {document.createdBy}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleDownload(document)}
                         >
-                          <Download className="h-4 w-4" />
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
                         </Button>
                         <Button
                           size="sm"
@@ -397,14 +434,14 @@ const Documents = () => {
                             setIsVersionHistoryOpen(true);
                           }}
                         >
-                          <Clock className="h-4 w-4" />
+                          <Clock className="h-4 w-4 mr-1" />
+                          History
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => {
                             setSelectedDocument(document);
-                            // Create file input for new version
                             const input = window.document.createElement('input');
                             input.type = 'file';
                             input.accept = '.pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif';
@@ -422,7 +459,8 @@ const Documents = () => {
                             input.click();
                           }}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-4 w-4 mr-1" />
+                          Version
                         </Button>
                         {(!isRestrictedUser || document.createdBy === user.email) && (
                           <Button
@@ -431,15 +469,102 @@ const Documents = () => {
                             onClick={() => handleDelete(document.id)}
                             className="text-red-600 hover:text-red-700"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
                           </Button>
                         )}
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                  </Card>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Folder</TableHead>
+                      <TableHead>Version</TableHead>
+                      <TableHead className="hidden lg:table-cell">Last Modified</TableHead>
+                      <TableHead className="hidden xl:table-cell">Created By</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDocuments.map((document) => (
+                      <TableRow key={document.id}>
+                        <TableCell className="font-medium">{document.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{document.folder}</Badge>
+                        </TableCell>
+                        <TableCell>v{document.currentVersion}</TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {format(new Date(document.lastModified), 'MMM dd, yyyy HH:mm')}
+                        </TableCell>
+                        <TableCell className="hidden xl:table-cell">{document.createdBy}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownload(document)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedDocument(document);
+                                setIsVersionHistoryOpen(true);
+                              }}
+                            >
+                              <Clock className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedDocument(document);
+                                const input = window.document.createElement('input');
+                                input.type = 'file';
+                                input.accept = '.pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif';
+                                input.onchange = (e) => {
+                                  const file = (e.target as HTMLInputElement).files?.[0];
+                                  if (file) {
+                                    sessionStorage.setItem('pendingFile', JSON.stringify({
+                                      name: file.name,
+                                      size: `${(file.size / 1024).toFixed(1)} KB`,
+                                      type: file.type
+                                    }));
+                                    setIsVersionDialogOpen(true);
+                                  }
+                                };
+                                input.click();
+                              }}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            {(!isRestrictedUser || document.createdBy === user.email) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDelete(document.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

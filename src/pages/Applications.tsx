@@ -297,9 +297,9 @@ const Applications = () => {
                   </div>
 
                   {/* Filters */}
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger className="w-full sm:w-48">
                         <Filter className="h-4 w-4 mr-2" />
                         <SelectValue placeholder="All Statuses" />
                       </SelectTrigger>
@@ -314,7 +314,7 @@ const Applications = () => {
                     </Select>
 
                     {(searchQuery || statusFilter !== 'all') && (
-                      <Button variant="outline" onClick={clearFilters}>
+                      <Button variant="outline" onClick={clearFilters} className="w-full sm:w-auto">
                         Clear Filters
                       </Button>
                     )}
@@ -353,43 +353,32 @@ const Applications = () => {
                       </div>
                     )}
                   </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Proposal Title</TableHead>
-                        <TableHead>Grant Type</TableHead>
-                        <TableHead>Submission Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Revisions</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredApplications.map((application) => {
+                 ) : (
+                   <div>
+                     {/* Mobile Card View */}
+                     <div className="block md:hidden space-y-4">
+                    {filteredApplications.map((application) => {
                       const feedback = application.reviewerFeedback || [];
                       
                       return (
-                        <TableRow key={application.id}>
-                          <TableCell className="font-medium">
-                            {application.proposalTitle}
-                          </TableCell>
-                          <TableCell>Research Grant</TableCell>
-                          <TableCell>
-                            {format(new Date(application.submissionDate), 'MMM dd, yyyy')}
-                          </TableCell>
-                          <TableCell>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
-                              {application.status.replace('_', ' ').toUpperCase()}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-gray-600">
-                              {application.revisionCount && application.revisionCount > 0 ? `${application.revisionCount} revision(s)` : 'Original'}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2 flex-wrap">
+                        <Card key={application.id} className="p-4">
+                          <div className="space-y-3">
+                            <div>
+                              <h3 className="font-medium">{application.proposalTitle}</h3>
+                              <p className="text-sm text-gray-600 mt-1">Research Grant</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
+                                  {application.status.replace('_', ' ').toUpperCase()}
+                                </span>
+                                <span className="text-sm text-gray-500">
+                                  {application.revisionCount && application.revisionCount > 0 ? `${application.revisionCount} revision(s)` : 'Original'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <p>Submitted: {format(new Date(application.submissionDate), 'MMM dd, yyyy')}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
                               {canWithdrawApplication(application) && (
                                 <Button
                                   size="sm"
@@ -401,7 +390,6 @@ const Applications = () => {
                                   Withdraw
                                 </Button>
                               )}
-
                               {canUpdateApplication(application) && (
                                 <Button
                                   size="sm"
@@ -424,12 +412,88 @@ const Applications = () => {
                                 </Button>
                               )}
                             </div>
-                          </TableCell>
-                        </TableRow>
+                          </div>
+                        </Card>
                       );
                     })}
-                    </TableBody>
-                  </Table>
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Proposal Title</TableHead>
+                          <TableHead>Grant Type</TableHead>
+                          <TableHead className="hidden lg:table-cell">Submission Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="hidden xl:table-cell">Revisions</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredApplications.map((application) => {
+                          const feedback = application.reviewerFeedback || [];
+                          
+                          return (
+                          <TableRow key={application.id}>
+                            <TableCell className="font-medium">
+                              {application.proposalTitle}
+                            </TableCell>
+                            <TableCell>Research Grant</TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              {format(new Date(application.submissionDate), 'MMM dd, yyyy')}
+                            </TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
+                                {application.status.replace('_', ' ').toUpperCase()}
+                              </span>
+                            </TableCell>
+                            <TableCell className="hidden xl:table-cell">
+                              <span className="text-sm text-gray-600">
+                                {application.revisionCount && application.revisionCount > 0 ? `${application.revisionCount} revision(s)` : 'Original'}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1 flex-wrap">
+                                {canWithdrawApplication(application) && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleWithdrawApplication(application.id)}
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {canUpdateApplication(application) && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => openUpdateDialog(application)}
+                                    className="text-blue-600 hover:text-blue-700"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {feedback.length > 0 && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => openFeedbackDialog(application)}
+                                  >
+                                    <MessageSquare className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
                 )}
               </CardContent>
             </Card>
