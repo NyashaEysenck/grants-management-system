@@ -2,11 +2,11 @@ import applicationsData from '../data/applications.json';
 import { DataStorage } from '../utils/dataStorage';
 import { apiClient } from '../lib/api';
 import axios from 'axios';
-import { Application, ResearcherBiodata, ReviewerFeedback, SignOffApproval } from './applications/types';
+import { Application, ResearcherBiodata, ReviewerFeedback, SignOffApproval, RevisionNote } from './applications/types';
 import { mapApplicationResponse, mapApplicationsList } from './applications/mappers';
 
 // Re-export types for use by other components
-export type { Application, ResearcherBiodata, ReviewerFeedback, SignOffApproval };
+export type { Application, ResearcherBiodata, ReviewerFeedback, SignOffApproval, RevisionNote };
 
 // Type assertion to ensure the imported JSON matches our Application interface
 const typedApplicationsData = applicationsData as { applications: Application[] };
@@ -529,10 +529,17 @@ export const updateApplicationForRevision = async (
         reader.readAsDataURL(file);
       });
 
+    // Create a new revision note entry if revision notes are provided
+    const newRevisionNote: Omit<RevisionNote, 'id'> = {
+      revisionNumber: 0, // Will be set by backend based on current revision count
+      notes: revisionNotes || 'Application revised and resubmitted by researcher',
+      submittedAt: new Date().toISOString()
+    };
+
     let payload: any = {
       proposalTitle: newProposalTitle,
       status: 'submitted',
-      revisionNotes: revisionNotes || 'Application revised and resubmitted by researcher',
+      revisionNote: newRevisionNote,
     };
 
     if (newFile) {
@@ -573,6 +580,7 @@ export const updateApplicationForRevision = async (
       isEditable: response.isEditable || response.is_editable,
       assignedReviewers: response.assignedReviewers || response.assigned_reviewers || [],
       reviewerFeedback: response.reviewerFeedback || response.reviewer_feedback || [],
+      revisionNotes: response.revisionNotes || response.revision_notes || [],
       signOffApprovals: response.signOffApprovals || response.sign_off_approvals || [],
       awardAmount: response.awardAmount || response.award_amount,
       contractFileName: response.contractFileName || response.contract_file_name,

@@ -97,10 +97,11 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Reviewer Notes (if any) */}
+          {/* Reviewer Notes (from managers/reviewers) */}
           {application.reviewerFeedback && application.reviewerFeedback.length > 0 && (
-            <div className="border rounded-md p-4 bg-gray-50">
-              <h3 className="font-semibold mb-2">Reviewer Notes</h3>
+            <div className="border rounded-md p-4 bg-blue-50">
+              <h3 className="font-semibold mb-2 text-blue-900">Reviewer Notes</h3>
+              <p className="text-xs text-blue-700 mb-3">Feedback from grants managers and reviewers</p>
               <div className="space-y-3 max-h-60 overflow-auto pr-2">
                 {application.reviewerFeedback.map((fb) => (
                   <div key={fb.id} className="border rounded p-3 bg-white">
@@ -122,6 +123,30 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
                     {fb.annotatedFileName && (
                       <p className="text-xs text-blue-600 mt-2"> {fb.annotatedFileName}</p>
                     )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Revision Notes History (from researcher) */}
+          {application.revisionNotes && application.revisionNotes.length > 0 && (
+            <div className="border rounded-md p-4 bg-green-50">
+              <h3 className="font-semibold mb-2 text-green-900">Your Revision History</h3>
+              <p className="text-xs text-green-700 mb-3">Your previous revision notes and changes</p>
+              <div className="space-y-3 max-h-60 overflow-auto pr-2">
+                {application.revisionNotes
+                  .sort((a, b) => b.revisionNumber - a.revisionNumber)
+                  .map((note) => (
+                  <div key={note.id} className="border rounded p-3 bg-white">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Revision #{note.revisionNumber}</p>
+                        <p className="text-xs text-gray-500">By you</p>
+                      </div>
+                      <p className="text-xs text-gray-400">{new Date(note.submittedAt).toLocaleString()}</p>
+                    </div>
+                    <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{note.notes}</p>
                   </div>
                 ))}
               </div>

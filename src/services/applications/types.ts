@@ -29,6 +29,13 @@ export interface SignOffApproval {
   signOffToken: string;
 }
 
+export interface RevisionNote {
+  id: string;
+  revisionNumber: number;
+  notes: string;
+  submittedAt: string;
+}
+
 export interface Application {
   id: string;
   grantId: string;
@@ -43,6 +50,7 @@ export interface Application {
   isEditable?: boolean;
   assignedReviewers?: string[];
   reviewerFeedback?: ReviewerFeedback[];
+  revisionNotes?: RevisionNote[];
   signOffApprovals?: SignOffApproval[];
   awardAmount?: number;
   contractFileName?: string;

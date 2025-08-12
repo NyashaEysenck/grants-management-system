@@ -15,6 +15,7 @@ export const mapApplicationResponse = (src: any): Application => {
     isEditable: src.isEditable || src.is_editable || false,
     assignedReviewers: src.assignedReviewers || src.assigned_reviewers || [],
     reviewerFeedback: src.reviewerFeedback || src.reviewer_feedback || [],
+    revisionNotes: src.revisionNotes || src.revision_notes || [],
     signOffApprovals: src.signOffApprovals || src.sign_off_approvals || [],
     awardAmount: src.awardAmount || src.award_amount,
     contractFileName: src.contractFileName || src.contract_file_name,
