@@ -1,18 +1,16 @@
 import { apiClient } from '../../../lib/api';
-import { ReviewerFeedback } from '../types';
+import { ReviewHistoryEntry } from '../types';
 import { handleReviewerError } from '../utils/errorHandling';
 
 export interface ReviewerAssignmentData {
   reviewer_emails: string[];
 }
 
-export interface ReviewerFeedbackData {
-  reviewer_email: string;
-  reviewer_name: string;
+export interface ReviewCommentData {
+  reviewerName: string;
+  reviewerEmail: string;
   comments: string;
-  decision: 'approve' | 'reject' | 'request_changes';
-  annotated_file_name?: string;
-  review_token: string;
+  status: string;
 }
 
 export interface ReviewTokenResponse {
@@ -50,28 +48,29 @@ export const assignReviewers = async (
   }
 };
 
+
 /**
- * Submit reviewer feedback for an application
+ * Add a review comment to an application
  */
-export const submitReviewerFeedback = async (
-  feedback: Omit<ReviewerFeedback, 'id' | 'submittedAt'>
-): Promise<{ feedbackId: string }> => {
+export const addReviewComment = async (
+  applicationId: string,
+  reviewData: ReviewCommentData
+): Promise<{ message: string }> => {
   try {
-    console.log(`Submitting reviewer feedback for application ${feedback.applicationId}:`, feedback);
+    console.log(`Adding review comment to application ${applicationId}:`, reviewData);
     
-    const response = await apiClient.post(`/reviewers/feedback/${feedback.applicationId}`, {
-      reviewer_email: feedback.reviewerEmail,
-      reviewer_name: feedback.reviewerName,
-      comments: feedback.comments,
-      decision: feedback.decision,
-      annotated_file_name: feedback.annotatedFileName,
-      review_token: feedback.reviewToken
+    const response = await apiClient.post(`/applications/${applicationId}/review?new_status=${reviewData.status}`, {
+      reviewerName: reviewData.reviewerName,
+      reviewerEmail: reviewData.reviewerEmail,
+      comments: reviewData.comments,
+      status: reviewData.status
     });
     
-    console.log('Reviewer feedback submitted successfully:', response);
-    return { feedbackId: response.feedback_id };
+    console.log('Review comment added successfully:', response);
+    return response;
   } catch (error) {
-    handleReviewerError(error);
+    console.error('Error adding review comment:', error);
+    throw handleReviewerError(error);
   }
 };
 
@@ -98,8 +97,7 @@ export const getApplicationByReviewToken = async (token: string): Promise<any | 
       biodata: response.biodata,
       deadline: response.deadline,
       isEditable: response.isEditable || response.is_editable,
-      assignedReviewers: response.assignedReviewers || response.assigned_reviewers || [],
-      reviewerFeedback: response.reviewerFeedback || response.reviewer_feedback || [],
+      reviewHistory: response.reviewHistory || response.review_history || [],
       signOffApprovals: response.signOffApprovals || response.sign_off_approvals || [],
       awardAmount: response.awardAmount || response.award_amount,
       contractFileName: response.contractFileName || response.contract_file_name,

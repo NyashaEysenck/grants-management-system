@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { assignReviewers, generateReviewToken, storeReviewToken, type Application } from '../services/applicationsService';
+import { addReviewComment, type Application } from '../services/applicationsService';
 import { Plus, X, Send, ExternalLink, Copy } from 'lucide-react';
 
 interface ReviewerAssignmentDialogProps {
@@ -64,15 +64,15 @@ Thank you for your time and expertise.
     }
 
     try {
-      // Assign reviewers via backend API
-      const result = await assignReviewers(application.id, validEmails);
-      
-      setGeneratedLinks(result.reviewTokens);
-      
+      // Note: Reviewer assignment functionality has been simplified
+      // For now, we'll show a message that this feature needs to be implemented
       toast({
-        title: "Reviewers Assigned",
-        description: `Successfully assigned ${validEmails.length} reviewer(s). Review links generated below.`,
+        title: "Feature Under Development",
+        description: "Reviewer assignment has been simplified. Use the review comment feature instead.",
+        variant: "destructive"
       });
+      return;
+      
     } catch (error: any) {
       toast({
         title: "Error",

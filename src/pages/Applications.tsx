@@ -13,7 +13,7 @@ import {
   canUpdateApplication,
   confirmContractReceipt,
   getApplication,
-  submitReviewerFeedback,
+  addReviewComment,
   type Application 
 } from '../services/applicationsService';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -380,7 +380,7 @@ const Applications = () => {
                     </TableHeader>
                     <TableBody>
                       {filteredApplications.map((application) => {
-                      const feedback = application.reviewerFeedback || [];
+                      const history = application.reviewHistory || [];
                       
                       return (
                         <TableRow key={application.id}>
@@ -426,7 +426,7 @@ const Applications = () => {
                                   Update
                                 </Button>
                               )}
-                              {feedback.length > 0 && (
+                              {history.length > 0 && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -483,7 +483,7 @@ const Applications = () => {
                 </div>
 
                 <ReviewerFeedbackCard 
-                  feedback={selectedApplication.reviewerFeedback || []}
+                  feedback={selectedApplication.reviewHistory || []}
                   canUpdate={canUpdateApplication(selectedApplication)}
                   onUpdateApplication={() => {
                     setIsFeedbackDialogOpen(false);
@@ -575,37 +575,58 @@ const Applications = () => {
       total: allApplications.length
     };
 
-    const handleReviewSubmit = async (data: ReviewFormData) => {
+    const handleAddReview = async () => {
       if (!selectedApplication) return;
       
+      const comments = form.getValues('comments');
+      if (!comments.trim()) {
+        toast({
+          title: "Comments Required",
+          description: "Please enter review comments before adding a review.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       try {
-        // 1. Update application status
-        let updatedApplication;
-        if (data.decision === 'needs_revision') {
-          updatedApplication = await updateApplicationStatus(selectedApplication.id, 'needs_revision', data.comments);
-        } else {
-          updatedApplication = await updateApplicationStatus(selectedApplication.id, data.decision, data.comments);
-        }
-        
-        // 2. Create reviewer feedback entry for grants manager review
-        const decisionMapping: Record<string, 'approve' | 'reject' | 'request_changes'> = {
-          'approved': 'approve',
-          'rejected': 'reject',
-          'needs_revision': 'request_changes',
-          'under_review': 'approve'
-        };
-        
-        await submitReviewerFeedback({
-          applicationId: selectedApplication.id,
+        await addReviewComment(selectedApplication.id, {
           reviewerEmail: user.email,
           reviewerName: user.name || 'Grants Manager',
-          comments: data.comments,
-          decision: decisionMapping[data.decision] || 'approve',
-          reviewToken: 'grants-manager-review'
+          comments: comments,
+          status: selectedApplication.status // Keep current status
         });
         
         toast({
-          title: "Application Updated",
+          title: "Review Added",
+          description: "Your review comment has been added successfully.",
+        });
+        
+        // Clear the comments field
+        form.setValue('comments', '');
+        
+        // Refresh selectedApplication with latest data
+        const updatedApp = await getApplication(selectedApplication.id);
+        setSelectedApplication(updatedApp);
+        
+        // Refresh applications data
+        loadApplications();
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to add review comment.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    const handleStatusChange = async (data: ReviewFormData) => {
+      if (!selectedApplication) return;
+      
+      try {
+        await updateApplicationStatus(selectedApplication.id, data.decision);
+        
+        toast({
+          title: "Status Updated",
           description: `Application status changed to ${data.decision.replace('_', ' ')}.`
         });
         setIsReviewDialogOpen(false);
@@ -645,10 +666,20 @@ const Applications = () => {
       }
     };
 
-    const openReviewDialog = (application: Application) => {
-      setSelectedApplication(application);
-      form.setValue('comments', application.reviewComments || '');
-      setIsReviewDialogOpen(true);
+    const openReviewDialog = async (application: Application) => {
+      try {
+        // Fetch fresh application data to ensure latest review history
+        const fullApp = await getApplication(application.id);
+        setSelectedApplication(fullApp);
+        form.setValue('comments', '');
+        setIsReviewDialogOpen(true);
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || 'Failed to load application details',
+          variant: "destructive"
+        });
+      }
     };
 
     const openAssignReviewers = (application: Application) => {
@@ -914,11 +945,7 @@ const Applications = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              setSelectedApplication(application);
-                              form.setValue('comments', application.reviewComments || '');
-                              setIsReviewDialogOpen(true);
-                            }}
+                            onClick={() => openReviewDialog(application)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             Review
@@ -1059,26 +1086,22 @@ const Applications = () => {
                   </div>
                 </div>
 
-                {/* Reviewer Feedback Section */}
-                {(selectedApplication.reviewerFeedback && selectedApplication.reviewerFeedback.length > 0) && (
-                  <div className="space-y-4">
-                    <h4 className="font-semibold">Reviewer Feedback</h4>
-                    {selectedApplication.reviewerFeedback!.map((feedback) => (
-                      <div key={feedback.id} className="border p-4 rounded-lg bg-gray-50">
-                        <div className="flex justify-between items-start mb-2">
+                {/* Review History Section */}
+                {selectedApplication.reviewHistory && selectedApplication.reviewHistory.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900">Review History</h4>
+                    {selectedApplication.reviewHistory.map((review) => (
+                      <div key={review.id} className="border rounded-lg p-3 space-y-2">
+                        <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium">{feedback.reviewerName}</p>
-                            <p className="text-sm text-gray-600">{feedback.reviewerEmail}</p>
-                            <p className="text-sm font-medium capitalize text-blue-600">{feedback.decision.replace('_', ' ')}</p>
+                            <p className="font-medium text-sm">{review.reviewerName}</p>
+                            <p className="text-xs text-gray-500">{review.reviewerEmail}</p>
                           </div>
                           <p className="text-xs text-gray-400">
-                            {format(new Date(feedback.submittedAt), 'MMM dd, yyyy HH:mm')}
+                            {format(new Date(review.submittedAt), 'MMM dd, yyyy HH:mm')}
                           </p>
                         </div>
-                        <p className="text-gray-700 whitespace-pre-wrap">{feedback.comments}</p>
-                        {feedback.annotatedFileName && (
-                          <p className="text-sm text-blue-600 mt-2">📎 {feedback.annotatedFileName}</p>
-                        )}
+                        <p className="text-gray-700 whitespace-pre-wrap text-sm">{review.comments}</p>
                       </div>
                     ))}
                   </div>
@@ -1086,7 +1109,7 @@ const Applications = () => {
 
                 {/* Review Form */}
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleReviewSubmit)} className="space-y-4">
+                  <form onSubmit={form.handleSubmit(handleStatusChange)} className="space-y-4">
                     <FormField
                       control={form.control}
                       name="comments"
@@ -1129,17 +1152,27 @@ const Applications = () => {
                       )}
                     />
 
-                    <div className="flex justify-end gap-2 pt-4">
+                    <div className="flex justify-between pt-4">
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => setIsReviewDialogOpen(false)}
+                        onClick={handleAddReview}
+                        className="bg-blue-50 text-blue-700 hover:bg-blue-100"
                       >
-                        Cancel
+                        Add Review
                       </Button>
-                      <Button type="submit">
-                        Submit Review
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsReviewDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit">
+                          Update Status
+                        </Button>
+                      </div>
                     </div>
                   </form>
                 </Form>

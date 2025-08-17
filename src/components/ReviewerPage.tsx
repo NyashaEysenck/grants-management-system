@@ -11,7 +11,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import { FileText, Upload, CheckCircle, Download } from 'lucide-react';
-import { getApplicationByReviewToken, submitReviewerFeedback, type Application } from '../services/applicationsService';
+import { addReviewComment, type Application } from '../services/applicationsService';
+import { getApplicationByReviewToken } from '../services/applications/api/reviewersApi';
 import { downloadApplicationDocument } from '../services/documentsService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -103,18 +104,62 @@ const ReviewerPage = () => {
     }
   };
 
+  const handleAddReview = async () => {
+    const formData = form.getValues();
+    
+    if (!formData.comments.trim()) {
+      toast({
+        title: "Comments Required",
+        description: "Please enter review comments before adding a review.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.reviewerName.trim() || !formData.reviewerEmail.trim()) {
+      toast({
+        title: "Reviewer Information Required",
+        description: "Please enter your name and email before adding a review.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!application) return;
+
+    try {
+      await addReviewComment(application.id, {
+        reviewerEmail: formData.reviewerEmail,
+        reviewerName: formData.reviewerName,
+        comments: formData.comments,
+        status: application.status // Keep current status
+      });
+
+      toast({
+        title: "Review Added",
+        description: "Your review comment has been added successfully.",
+      });
+      
+      // Clear only the comments field
+      form.setValue('comments', '');
+    } catch (error: any) {
+      toast({
+        title: "Failed to Add Review",
+        description: error.message || "There was an error adding your review. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const onSubmit = async (data: ReviewFormData) => {
     if (!application || !token) return;
 
     try {
-      await submitReviewerFeedback({
-        applicationId: application.id,
+      await addReviewComment(application.id, {
         reviewerEmail: data.reviewerEmail,
         reviewerName: data.reviewerName,
         comments: data.comments,
-        decision: data.decision,
-        annotatedFileName: selectedFile?.name,
-        reviewToken: token,
+        status: data.decision
       });
 
       setIsSubmitted(true);
@@ -348,9 +393,18 @@ const ReviewerPage = () => {
                   )}
                 </div>
 
-                <div className="flex justify-end pt-6">
+                <div className="flex justify-between pt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddReview}
+                    className="bg-blue-50 text-blue-700 hover:bg-blue-100"
+                    size="lg"
+                  >
+                    Add Review
+                  </Button>
                   <Button type="submit" size="lg">
-                    Submit Review
+                    Submit Final Review
                   </Button>
                 </div>
               </form>

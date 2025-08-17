@@ -2,7 +2,7 @@
 export type { 
   Application, 
   ResearcherBiodata, 
-  ReviewerFeedback, 
+  ReviewHistoryEntry, 
   SignOffApproval, 
   RevisionNote 
 } from './types';
@@ -26,12 +26,8 @@ export {
 } from './api/applicationsApi';
 
 export {
-  assignReviewers,
-  submitReviewerFeedback,
-  getApplicationByReviewToken,
-  type ReviewerAssignmentData,
-  type ReviewerFeedbackData,
-  type ReviewTokenResponse
+  addReviewComment,
+  type ReviewCommentData
 } from './api/reviewersApi';
 
 export {
@@ -54,7 +50,6 @@ export {
   canResubmitApplication,
   canUpdateApplication,
   validateApplicationSubmission,
-  validateReviewerFeedback,
   validateSignOffApproval
 } from './business/applicationValidation';
 

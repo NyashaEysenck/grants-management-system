@@ -98,12 +98,12 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
 
         <div className="space-y-6">
           {/* Reviewer Notes (from managers/reviewers) */}
-          {application.reviewerFeedback && application.reviewerFeedback.length > 0 && (
+          {application.reviewHistory && application.reviewHistory.length > 0 && (
             <div className="border rounded-md p-4 bg-blue-50">
               <h3 className="font-semibold mb-2 text-blue-900">Reviewer Notes</h3>
               <p className="text-xs text-blue-700 mb-3">Feedback from grants managers and reviewers</p>
               <div className="space-y-3 max-h-60 overflow-auto pr-2">
-                {application.reviewerFeedback.map((fb) => (
+                {application.reviewHistory.map((fb) => (
                   <div key={fb.id} className="border rounded p-3 bg-white">
                     <div className="flex justify-between items-start">
                       <div>
@@ -111,7 +111,7 @@ const ApplicationUpdateDialog: React.FC<ApplicationUpdateDialogProps> = ({
                         {fb.reviewerEmail && (
                           <p className="text-xs text-gray-500">{fb.reviewerEmail}</p>
                         )}
-                        <p className="text-xs font-medium text-blue-700 mt-1 capitalize">{fb.decision?.replace('_', ' ') || 'feedback'}</p>
+                        <p className="text-xs font-medium text-blue-700 mt-1 capitalize">{fb.status?.replace('_', ' ') || 'feedback'}</p>
                       </div>
                       {fb.submittedAt && (
                         <p className="text-xs text-gray-400">{new Date(fb.submittedAt).toLocaleString()}</p>

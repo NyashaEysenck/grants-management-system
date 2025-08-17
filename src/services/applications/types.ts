@@ -5,16 +5,14 @@ export interface ResearcherBiodata {
   firstTimeApplicant: boolean;
 }
 
-export interface ReviewerFeedback {
+export interface ReviewHistoryEntry {
   id: string;
-  applicationId: string;
+  reviewerName: string;
   reviewerEmail: string;
-  reviewerName?: string;
   comments: string;
-  decision: 'approve' | 'reject' | 'request_changes';
-  annotatedFileName?: string;
   submittedAt: string;
-  reviewToken: string;
+  status: string;
+  annotatedFileName?: string;
 }
 
 export interface SignOffApproval {
@@ -48,8 +46,7 @@ export interface Application {
   biodata?: ResearcherBiodata;
   deadline?: string;
   isEditable?: boolean;
-  assignedReviewers?: string[];
-  reviewerFeedback?: ReviewerFeedback[];
+  reviewHistory?: ReviewHistoryEntry[];
   revisionNotes?: RevisionNote[];
   signOffApprovals?: SignOffApproval[];
   awardAmount?: number;

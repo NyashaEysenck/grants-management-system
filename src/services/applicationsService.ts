@@ -13,7 +13,7 @@ import {
   // Types
   Application,
   ResearcherBiodata,
-  ReviewerFeedback,
+  ReviewHistoryEntry,
   SignOffApproval,
   RevisionNote,
   
@@ -28,9 +28,7 @@ import {
   resubmitApplication as apiResubmitApplication,
   updateApplicationForRevision as apiUpdateApplicationForRevision,
   
-  assignReviewers as apiAssignReviewers,
-  submitReviewerFeedback as apiSubmitReviewerFeedback,
-  getApplicationByReviewToken as apiGetApplicationByReviewToken,
+  addReviewComment as apiAddReviewComment,
   
   initiateSignOffWorkflow as apiInitiateSignOffWorkflow,
   submitSignOffApproval as apiSubmitSignOffApproval,
@@ -53,11 +51,11 @@ import {
   
   // Types for backward compatibility
   type ApplicationSubmissionData,
-  type ReviewTokenResponse
+  type ReviewCommentData
 } from './applications';
 
 // Re-export types for backward compatibility
-export type { Application, ResearcherBiodata, ReviewerFeedback, SignOffApproval, RevisionNote };
+export type { Application, ResearcherBiodata, ReviewHistoryEntry, SignOffApproval, RevisionNote };
 
 // Core application operations
 export const getApplication = apiGetApplication;
@@ -71,9 +69,7 @@ export const resubmitApplication = apiResubmitApplication;
 export const updateApplicationForRevision = apiUpdateApplicationForRevision;
 
 // Reviewer operations
-export const assignReviewers = apiAssignReviewers;
-export const submitReviewerFeedback = apiSubmitReviewerFeedback;
-export const getApplicationByReviewToken = apiGetApplicationByReviewToken;
+export const addReviewComment = apiAddReviewComment;
 
 // Sign-off operations
 export const initiateSignOffWorkflow = apiInitiateSignOffWorkflow;
@@ -108,8 +104,8 @@ export const getApplicationsByUser = (email: string): Application[] => {
 /**
  * @deprecated This function has been removed. Reviewer feedback is now handled through the backend API
  */
-export const getReviewerFeedback = (applicationId: string): ReviewerFeedback[] => {
-  throw new Error('getReviewerFeedback is deprecated. Reviewer feedback is included in application details from the backend.');
+export const getReviewHistory = (applicationId: string): ReviewHistoryEntry[] => {
+  throw new Error('getReviewHistory is deprecated. Review history is included in application details from the backend.');
 };
 
 /**

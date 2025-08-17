@@ -1,61 +1,60 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { MessageSquare, FileText, Download, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { ReviewHistoryEntry } from '../services/applications/types';
+import { MessageSquare, FileText, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { ReviewHistoryEntry } from '../services/applicationsService';
 
-interface ReviewerFeedbackCardProps {
-  feedback: ReviewHistoryEntry[];
+interface ReviewHistoryCardProps {
+  history: ReviewHistoryEntry[];
   onUpdateApplication?: () => void;
   canUpdate?: boolean;
 }
 
-const ReviewerFeedbackCard: React.FC<ReviewerFeedbackCardProps> = ({
-  feedback,
+const ReviewHistoryCard: React.FC<ReviewHistoryCardProps> = ({
+  history,
   onUpdateApplication,
   canUpdate = false,
 }) => {
-  if (feedback.length === 0) {
+  if (history.length === 0) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
           <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">No reviewer feedback available yet.</p>
+          <p className="text-gray-500">No review history available yet.</p>
         </CardContent>
       </Card>
     );
   }
 
-  const getDecisionIcon = (decision: string) => {
-    switch (decision) {
-      case 'approve':
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'approved':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'reject':
+      case 'rejected':
         return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'request_changes':
+      case 'needs_revision':
         return <AlertCircle className="h-4 w-4 text-yellow-600" />;
       default:
         return <MessageSquare className="h-4 w-4 text-gray-600" />;
     }
   };
 
-  const getDecisionColor = (decision: string) => {
-    switch (decision) {
-      case 'approve':
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
         return 'bg-green-100 text-green-800';
-      case 'reject':
+      case 'rejected':
         return 'bg-red-100 text-red-800';
-      case 'request_changes':
+      case 'needs_revision':
         return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const hasRequestedChanges = feedback.some(f => f.status === 'request_changes' || f.status === 'needs_revision');
+  const hasRequestedChanges = history.some(h => h.status === 'needs_revision');
 
   return (
     <Card>
@@ -63,7 +62,7 @@ const ReviewerFeedbackCard: React.FC<ReviewerFeedbackCardProps> = ({
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
-            Reviewer Feedback ({feedback.length})
+            Review History ({history.length})
           </span>
           {canUpdate && hasRequestedChanges && (
             <Button onClick={onUpdateApplication} size="sm">
@@ -74,14 +73,14 @@ const ReviewerFeedbackCard: React.FC<ReviewerFeedbackCardProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {feedback.map((review) => (
+        {history.map((review) => (
           <div key={review.id} className="border rounded-lg p-4 space-y-3">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  {getDecisionIcon(review.status)}
-                  <span className="font-medium">{review.reviewerName || 'Anonymous Reviewer'}</span>
-                  <Badge className={getDecisionColor(review.status)}>
+                  {getStatusIcon(review.status)}
+                  <span className="font-medium">{review.reviewerName}</span>
+                  <Badge className={getStatusColor(review.status)}>
                     {review.status.replace('_', ' ').toUpperCase()}
                   </Badge>
                 </div>
@@ -95,16 +94,6 @@ const ReviewerFeedbackCard: React.FC<ReviewerFeedbackCardProps> = ({
             <div className="bg-gray-50 p-3 rounded">
               <p className="text-sm text-gray-700 whitespace-pre-wrap">{review.comments}</p>
             </div>
-            
-            {review.annotatedFileName && (
-              <div className="flex items-center gap-2 text-sm text-blue-600">
-                <FileText className="h-4 w-4" />
-                <span>Annotated file: {review.annotatedFileName}</span>
-                <Button variant="ghost" size="sm" className="h-auto p-0 text-blue-600 hover:text-blue-700">
-                  <Download className="h-3 w-3 ml-1" />
-                </Button>
-              </div>
-            )}
           </div>
         ))}
         
@@ -127,4 +116,4 @@ const ReviewerFeedbackCard: React.FC<ReviewerFeedbackCardProps> = ({
   );
 };
 
-export default ReviewerFeedbackCard;
+export default ReviewHistoryCard;
