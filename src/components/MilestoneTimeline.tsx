@@ -27,7 +27,7 @@ const MilestoneTimeline = ({ project, onUpdate }: MilestoneTimelineProps) => {
     setUploadingReport(milestoneId);
 
     try {
-      const success = uploadProgressReport(project.id, milestoneId, file.name);
+      const success = await uploadProgressReport(project.id, milestoneId, file);
       
       if (success) {
         toast({
@@ -55,10 +55,10 @@ const MilestoneTimeline = ({ project, onUpdate }: MilestoneTimelineProps) => {
   };
 
   const isOverdue = (milestone: Milestone) => {
-    return milestone.isOverdue || (
-      isAfter(new Date(), new Date(milestone.dueDate)) && 
+    return milestone.is_overdue || (
+      isAfter(new Date(), new Date(milestone.due_date)) && 
       milestone.status !== 'completed' && 
-      !milestone.progressReportUploaded
+      !milestone.progress_report_uploaded
     );
   };
 
@@ -116,7 +116,7 @@ const MilestoneTimeline = ({ project, onUpdate }: MilestoneTimelineProps) => {
                       <p className="text-sm text-gray-600 mt-1">{milestone.description}</p>
                       <div className="flex items-center gap-4 mt-2">
                         <span className="text-xs text-gray-500">
-                          Due: {format(new Date(milestone.dueDate), 'MMM dd, yyyy')}
+                          Due: {format(new Date(milestone.due_date), 'MMM dd, yyyy')}
                         </span>
                         {isOverdue(milestone) && (
                           <Badge variant="destructive" className="text-xs">
@@ -138,15 +138,15 @@ const MilestoneTimeline = ({ project, onUpdate }: MilestoneTimelineProps) => {
                         <span className="text-sm font-medium">Progress Report</span>
                       </div>
                       
-                      {milestone.progressReportUploaded ? (
+                      {milestone.progress_report_uploaded ? (
                         <div className="flex items-center gap-2 text-green-600">
                           <CheckCircle className="h-4 w-4" />
                           <div className="text-right">
                             <p className="text-sm font-medium">Submitted</p>
-                            <p className="text-xs">{milestone.progressReportFilename}</p>
-                            {milestone.progressReportDate && (
+                            <p className="text-xs">{milestone.progress_report_filename}</p>
+                            {milestone.progress_report_date && (
                               <p className="text-xs text-gray-500">
-                                {format(new Date(milestone.progressReportDate), 'MMM dd, yyyy')}
+                                {format(new Date(milestone.progress_report_date), 'MMM dd, yyyy')}
                               </p>
                             )}
                           </div>
