@@ -1,7 +1,16 @@
 
-import grantCallsData from '../data/grantCalls.json';
-import { DataStorage } from '../utils/dataStorage';
+/**
+ * DEPRECATED - Grant Calls Service
+ * 
+ * This service has been refactored and moved to:
+ * - src/services/grantCalls/index.ts (main service)
+ * - src/services/grantCalls/api/ (API integration)
+ * 
+ * Please update your imports to use the new modular structure.
+ * This file will be removed in a future version.
+ */
 
+// Legacy interface for backward compatibility
 export interface GrantCall {
   id: string;
   title: string;
@@ -17,87 +26,35 @@ export interface GrantCall {
   updatedAt?: string;
 }
 
-// Initialize persistent storage with fallback to JSON data
-let grantCallsCache: GrantCall[] = DataStorage.initializeFromJSON('grantCalls', grantCallsData.grantCalls as GrantCall[]);
-
-/**
- * Get all grant calls
- */
-export const getAllCalls = (): GrantCall[] => {
-  return [...grantCallsCache];
+// Deprecated functions - throw errors to force migration
+export const getAllCalls = (): never => {
+  throw new Error('getAllCalls is deprecated. Please import from "services/grantCalls" instead.');
 };
 
-/**
- * Get a specific grant call by ID
- */
-export const getCallById = (id: string): GrantCall | undefined => {
-  return grantCallsCache.find(call => call.id === id);
+export const getCallById = (id: string): never => {
+  throw new Error('getCallById is deprecated. Please import from "services/grantCalls" instead.');
 };
 
-/**
- * Get grant calls filtered by type
- */
-export const getCallsByType = (type: string): GrantCall[] => {
-  return grantCallsCache.filter(call => 
-    call.type.toLowerCase() === type.toLowerCase()
-  );
+export const getCallsByType = (type: string): never => {
+  throw new Error('getCallsByType is deprecated. Please import from "services/grantCalls" instead.');
 };
 
-/**
- * Get only open grant calls
- */
-export const getOpenCalls = (): GrantCall[] => {
-  return grantCallsCache.filter(call => call.status === 'Open');
+export const getOpenCalls = (): never => {
+  throw new Error('getOpenCalls is deprecated. Please import from "services/grantCalls" instead.');
 };
 
-/**
- * Create a new grant call
- */
-export const createCall = (call: Omit<GrantCall, 'id'>): GrantCall => {
-  const newCall: GrantCall = {
-    ...call,
-    id: `gc-${Date.now().toString().slice(-6)}`,
-  };
-  grantCallsCache.push(newCall);
-  DataStorage.saveGrantCalls(grantCallsCache);
-  return newCall;
+export const createCall = (call: any): never => {
+  throw new Error('createCall is deprecated. Please import from "services/grantCalls" instead.');
 };
 
-/**
- * Update an existing grant call
- */
-export const updateCall = (id: string, updates: Partial<Omit<GrantCall, 'id'>>): boolean => {
-  const index = grantCallsCache.findIndex(call => call.id === id);
-  if (index !== -1) {
-    grantCallsCache[index] = { ...grantCallsCache[index], ...updates };
-    DataStorage.saveGrantCalls(grantCallsCache);
-    return true;
-  }
-  return false;
+export const updateCall = (id: string, updates: any): never => {
+  throw new Error('updateCall is deprecated. Please import from "services/grantCalls" instead.');
 };
 
-/**
- * Toggle the status of a grant call between Open and Closed
- */
-export const toggleCallStatus = (id: string): boolean => {
-  const call = grantCallsCache.find(call => call.id === id);
-  if (call) {
-    call.status = call.status === 'Open' ? 'Closed' : 'Open';
-    DataStorage.saveGrantCalls(grantCallsCache);
-    return true;
-  }
-  return false;
+export const toggleCallStatus = (id: string): never => {
+  throw new Error('toggleCallStatus is deprecated. Please import from "services/grantCalls" instead.');
 };
 
-/**
- * Delete a grant call
- */
-export const deleteCall = (id: string): boolean => {
-  const initialLength = grantCallsCache.length;
-  grantCallsCache = grantCallsCache.filter(call => call.id !== id);
-  if (grantCallsCache.length < initialLength) {
-    DataStorage.saveGrantCalls(grantCallsCache);
-    return true;
-  }
-  return false;
+export const deleteCall = (id: string): never => {
+  throw new Error('deleteCall is deprecated. Please import from "services/grantCalls" instead.');
 };

@@ -1,7 +1,7 @@
 /**
  * Refactored Applications Service - Clean Backend-Only Implementation
  * 
- * This is a refactored version that:
+ * This is a refactored version of the original applicationsService.ts that:
  * - Removes all mock JSON data dependencies
  * - Eliminates localStorage caching
  * - Uses the new modular API structure
@@ -35,21 +35,19 @@ import {
   initiateSignOffWorkflow as apiInitiateSignOffWorkflow,
   submitSignOffApproval as apiSubmitSignOffApproval,
   getApplicationBySignOffToken as apiGetApplicationBySignOffToken,
-  getSignOffStatusApi,
-  
   saveBiodata as apiSaveBiodata,
   getBiodata as apiGetBiodata,
   
   // Business logic
-  canWithdrawApplication as canWithdraw,
-  canResubmitApplication as canResubmit,
-  canUpdateApplication as canUpdate,
-  getApplicationRevisionHistory as getRevisionHistory,
-  getSignOffStatus as getSignOffStatusFromWorkflow,
-  generateReviewToken as generateToken,
+  canWithdrawApplication,
+  canResubmitApplication,
+  canUpdateApplication,
+  getApplicationRevisionHistory,
+  getSignOffStatus,
+  generateReviewToken,
   
   // Utilities
-  getStatusColor as getStatusColorUtil,
+  getStatusColor,
   
   // Types for backward compatibility
   type ApplicationSubmissionData,
@@ -85,15 +83,17 @@ export const saveBiodata = apiSaveBiodata;
 export const getBiodata = apiGetBiodata;
 
 // Business logic functions
-export const canWithdrawApplication = canWithdraw;
-export const canResubmitApplication = canResubmit;
-export const canUpdateApplication = canUpdate;
-export const getApplicationRevisionHistory = getRevisionHistory;
-export const getSignOffStatus = getSignOffStatusFromWorkflow;
-export const generateReviewToken = generateToken;
+export { 
+  canWithdrawApplication, 
+  canResubmitApplication, 
+  canUpdateApplication,
+  getApplicationRevisionHistory,
+  getSignOffStatus,
+  generateReviewToken
+};
 
 // Utility functions
-export const getStatusColor = getStatusColorUtil;
+export { getStatusColor };
 
 // Legacy functions that have been removed (now handled by backend)
 // These functions are deprecated and will throw errors if used
@@ -156,6 +156,7 @@ export const migrateGetApplicationsByUser = async (email: string): Promise<Appli
   console.warn('Using deprecated pattern. Please update to use getUserApplications() directly.');
   return getUserApplications();
 };
+
 
 // Export the new modular structure for components that want to use it directly
 export * from './applications';

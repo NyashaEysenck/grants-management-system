@@ -1,16 +1,43 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getCallById } from '../services/grantCallsService';
+import { getCallById } from '../services/grantCalls';
 import { ArrowLeft, Calendar, Building, Tag, Users, FileText, Target } from 'lucide-react';
 
 const GrantCallDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
-  const grantCall = id ? getCallById(id) : null;
+  const [grantCall, setGrantCall] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadGrantCall = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        const call = await getCallById(id);
+        setGrantCall(call);
+      } catch (error) {
+        console.error('Error loading grant call:', error);
+        setGrantCall(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadGrantCall();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">Loading grant call details...</div>
+      </div>
+    );
+  }
 
   if (!grantCall) {
     return (

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { submitRequisition, type Project, type Milestone } from '../services/projectsService';
+import { createRequisition, submitRequisition, type Project } from '../services/projects';
 import { DollarSign } from 'lucide-react';
 
 interface FundRequisitionFormProps {
@@ -53,10 +53,11 @@ const FundRequisitionForm = ({ project, isOpen, onClose, onSuccess }: FundRequis
     setIsSubmitting(true);
 
     try {
-      const success = submitRequisition(project.id, {
-        milestoneId,
+      const success = await submitRequisition(project.id, {
+        milestone_id: milestoneId,
         amount: amountNum,
-        notes: notes.trim()
+        notes: notes.trim(),
+        requested_date: new Date().toISOString()
       });
 
       if (success) {
@@ -120,7 +121,7 @@ const FundRequisitionForm = ({ project, isOpen, onClose, onSuccess }: FundRequis
             </Select>
             {selectedMilestone && (
               <p className="text-xs text-gray-500 mt-1">
-                Due: {new Date(selectedMilestone.dueDate).toLocaleDateString()}
+                Due: {new Date(selectedMilestone.due_date).toLocaleDateString()}
               </p>
             )}
           </div>

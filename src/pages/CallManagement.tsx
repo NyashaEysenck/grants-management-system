@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { getAllCalls, createCall, updateCall, toggleCallStatus, GrantCall } from '../services/grantCallsService';
+import React, { useState, useEffect } from 'react';
+import { getAllCalls, createCall, updateCall, toggleCallStatus, GrantCall } from '../services/grantCalls';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -29,9 +29,26 @@ const callFormSchema = z.object({
 type CallFormData = z.infer<typeof callFormSchema>;
 
 const CallManagement = () => {
-  const [calls, setCalls] = useState<GrantCall[]>(getAllCalls());
+  const [calls, setCalls] = useState<GrantCall[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<GrantCall | null>(null);
+
+  useEffect(() => {
+    const loadCalls = async () => {
+      try {
+        setLoading(true);
+        const callsData = await getAllCalls();
+        setCalls(callsData);
+      } catch (error) {
+        console.error('Error loading calls:', error);
+        setCalls([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCalls();
+  }, []);
 
   const form = useForm<CallFormData>({
     resolver: zodResolver(callFormSchema),
@@ -46,59 +63,90 @@ const CallManagement = () => {
     },
   });
 
-  const handleCreateCall = (data: CallFormData) => {
-    const newCall = createCall({
-      title: data.title,
-      type: data.type,
-      sponsor: data.sponsor,
-      deadline: data.deadline,
-      scope: data.scope,
-      eligibility: data.eligibility,
-      requirements: data.requirements,
-      status: 'Open',
-      visibility: 'Public',
-    });
+  const handleCreateCall = async (data: CallFormData) => {
+    try {
+      const newCall = await createCall({
+        title: data.title,
+        type: data.type,
+        sponsor: data.sponsor,
+        deadline: data.deadline,
+        scope: data.scope,
+        eligibility: data.eligibility,
+        requirements: data.requirements,
+        status: 'Open',
+        visibility: 'Public',
+      });
 
-    setCalls(prev => [...prev, newCall]);
-    setIsCreateDialogOpen(false);
-    form.reset();
-    toast({
-      title: 'Success',
-      description: 'Grant call created successfully',
-    });
-  };
-
-  const handleEditCall = (data: CallFormData) => {
-    if (!editingCall) return;
-
-    const success = updateCall(editingCall.id, {
-      title: data.title,
-      type: data.type,
-      sponsor: data.sponsor,
-      deadline: data.deadline,
-      scope: data.scope,
-      eligibility: data.eligibility,
-      requirements: data.requirements,
-    });
-
-    if (success) {
-      setCalls(getAllCalls());
-      setEditingCall(null);
-      form.reset();
+      if (newCall) {
+        setCalls(prev => [...prev, newCall]);
+        setIsCreateDialogOpen(false);
+        form.reset();
+        toast({
+          title: 'Success',
+          description: 'Grant call created successfully',
+        });
+      }
+    } catch (error) {
+      console.error('Error creating call:', error);
       toast({
-        title: 'Success',
-        description: 'Grant call updated successfully',
+        title: 'Error',
+        description: 'Failed to create grant call',
+        variant: 'destructive',
       });
     }
   };
 
-  const handleToggleCallStatus = (callId: string) => {
-    const success = toggleCallStatus(callId);
-    if (success) {
-      setCalls(getAllCalls());
+  const handleEditCall = async (data: CallFormData) => {
+    if (!editingCall) return;
+
+    try {
+      const updatedCall = await updateCall(editingCall.id, {
+        title: data.title,
+        type: data.type,
+        sponsor: data.sponsor,
+        deadline: data.deadline,
+        scope: data.scope,
+        eligibility: data.eligibility,
+        requirements: data.requirements,
+      });
+
+      if (updatedCall) {
+        const updatedCalls = await getAllCalls();
+        setCalls(updatedCalls);
+        setEditingCall(null);
+        form.reset();
+        toast({
+          title: 'Success',
+          description: 'Grant call updated successfully',
+        });
+      }
+    } catch (error) {
+      console.error('Error updating call:', error);
       toast({
-        title: 'Success',
-        description: 'Call status updated successfully',
+        title: 'Error',
+        description: 'Failed to update grant call',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleCallStatus = async (callId: string) => {
+    try {
+      const success = await toggleCallStatus(callId);
+      if (success) {
+        const updatedCalls = await getAllCalls();
+        setCalls(updatedCalls);
+        toast({
+          title: 'Success',
+          description: 'Call status updated successfully',
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling call status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update call status',
+        variant: 'destructive',
       });
     }
   };

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { uploadProgressReport, getMilestoneStatusColor, type Project, type Milestone } from '../services/projectsService';
+import { uploadProgressReport, getMilestoneStatusColor, type Project, type Milestone, updateMilestoneStatus } from '../services/projects';
 import { Calendar, Upload, FileText, AlertTriangle, CheckCircle } from 'lucide-react';
 import { format, isAfter } from 'date-fns';
 

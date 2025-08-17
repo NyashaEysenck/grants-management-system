@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import { FileText, CheckCircle, XCircle, DollarSign, User, Calendar } from 'lucide-react';
-import { getProjectByVCToken, submitVCSignOff, type Project } from '../services/projectsService';
+import { getProjectByVCToken, submitVCSignOff, completeVCSignOff } from '../services/projects';
 import { useToast } from '@/hooks/use-toast';
 
 interface VCSignOffFormData {

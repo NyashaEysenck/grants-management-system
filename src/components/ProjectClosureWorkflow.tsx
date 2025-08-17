@@ -11,8 +11,9 @@ import {
   generateClosureCertificate, 
   archiveProjectDocuments,
   reviewFinalReports,
-  type Project 
-} from '../services/projectsService';
+  submitFinalReports
+} from '../services/projects';
+import { type Project } from '../services/projects/api/types';
 import { 
   CheckCircle, 
   Clock, 
@@ -36,8 +37,8 @@ const ProjectClosureWorkflow = ({ project, userRole, userEmail, onUpdate }: Proj
   const [reviewNotes, setReviewNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const finalReport = project.finalReport;
-  const closureWorkflow = project.closureWorkflow;
+  const finalReport = project.final_report;
+  const closureWorkflow = project.closure_workflow;
 
   const handleReviewFinalReports = async (status: 'approved' | 'revision_required') => {
     if (!reviewNotes.trim()) {
@@ -158,8 +159,8 @@ const ProjectClosureWorkflow = ({ project, userRole, userEmail, onUpdate }: Proj
                             finalReport?.status === 'approved' && 
                             closureWorkflow?.status !== 'vc_review';
   const canGenerateCertificate = closureWorkflow?.status === 'signed_off' && 
-                                !closureWorkflow?.closureCertificateGenerated;
-  const canArchive = closureWorkflow?.closureCertificateGenerated && 
+                                !closureWorkflow?.closure_certificate_generated;
+  const canArchive = closureWorkflow?.closure_certificate_generated && 
                     project.status !== 'closed';
 
   return (
@@ -251,15 +252,15 @@ const ProjectClosureWorkflow = ({ project, userRole, userEmail, onUpdate }: Proj
               <span className="font-medium text-blue-900">VC Approved</span>
             </div>
             <p className="text-sm text-blue-700 mb-2">
-              Signed off by: {closureWorkflow.vcSignedBy}
+              Signed off by: {closureWorkflow.vc_signed_by}
             </p>
             <p className="text-sm text-blue-700">
-              Date: {closureWorkflow.vcSignedDate ? new Date(closureWorkflow.vcSignedDate).toLocaleDateString() : 'N/A'}
+              Date: {new Date(closureWorkflow.vc_signed_date).toLocaleDateString()}
             </p>
-            {closureWorkflow.vcNotes && (
+            {closureWorkflow.vc_notes && (
               <div className="mt-2 p-2 bg-white rounded">
                 <p className="text-xs font-medium text-blue-800">VC Notes:</p>
-                <p className="text-xs text-blue-700">{closureWorkflow.vcNotes}</p>
+                <p className="text-sm text-blue-700">{closureWorkflow.vc_notes}</p>
               </div>
             )}
           </div>
@@ -281,13 +282,13 @@ const ProjectClosureWorkflow = ({ project, userRole, userEmail, onUpdate }: Proj
         )}
 
         {/* Download Closure Certificate */}
-        {closureWorkflow?.closureCertificateGenerated && (
+        {closureWorkflow?.closure_certificate_generated && (
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900">Closure Certificate</p>
                 <p className="text-sm text-gray-600">
-                  Generated: {closureWorkflow.closureCertificateDate ? new Date(closureWorkflow.closureCertificateDate).toLocaleDateString() : 'N/A'}
+                  Certificate generated on {closureWorkflow.closure_certificate_date}
                 </p>
               </div>
               <Button variant="outline" size="sm">

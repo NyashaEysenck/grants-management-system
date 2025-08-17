@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getOpenCalls, getAllCalls } from '../services/grantCallsService';
+import { getOpenCalls, getAllCalls } from '../services/grantCalls';
 import { getAllApplications } from '../services/applicationsService';
-import { getAllProjects } from '../services/projectsService';
+import { getAllProjects } from '../services/projects';
 import { Calendar, Building, Tag, AlertTriangle, Users, FileText, Award, Clock, CheckCircle, DollarSign, Search, Filter } from 'lucide-react';
 
 const Dashboard = () => {
@@ -21,29 +21,39 @@ const Dashboard = () => {
   const isResearcher = user?.role.toLowerCase() === 'researcher';
   const isGrantsManager = user?.role.toLowerCase() === 'grants manager';
 
+  // State for async data
+  const [allCalls, setAllCalls] = useState<any[]>([]);
+  const [allApplications, setAllApplications] = useState<any[]>([]);
+  const [allProjects, setAllProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load all data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [calls, applications, projects] = await Promise.all([
+          getAllCalls(),
+          getAllApplications(),
+          getAllProjects()
+        ]);
+        setAllCalls(calls);
+        setAllApplications(applications);
+        setAllProjects(projects);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        setAllCalls([]);
+        setAllApplications([]);
+        setAllProjects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
   // Grants Manager Dashboard Logic
   if (isGrantsManager) {
-    const allCalls = getAllCalls();
-    const [allApplications, setAllApplications] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const allProjects = getAllProjects();
-
-    useEffect(() => {
-      const loadApplications = async () => {
-        try {
-          setLoading(true);
-          const applications = await getAllApplications();
-          setAllApplications(applications);
-        } catch (error) {
-          console.error('Error loading applications:', error);
-          setAllApplications([]);
-        } finally {
-          setLoading(false);
-        }
-      };
-      loadApplications();
-    }, []);
-
     // Calculate metrics
     const totalCalls = allCalls.length;
     const receivedApplications = allApplications.length;
@@ -255,7 +265,8 @@ const Dashboard = () => {
 
   // Researcher Dashboard with search and filter
   if (isResearcher) {
-    const openCalls = getOpenCalls();
+    // Filter to only open calls for researchers
+    const openCalls = (allCalls || []).filter(call => call.status === 'Open');
 
     // Get unique types and sponsors for filter options
     const availableTypes = useMemo(() => {

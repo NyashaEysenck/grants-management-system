@@ -1,52 +1,43 @@
+/**
+ * DEPRECATED - DataStorage Class
+ * 
+ * This class was used for localStorage-based data persistence with mock JSON data.
+ * All services have been refactored to use backend APIs exclusively.
+ * 
+ * This file will be removed in a future version.
+ * Please update any remaining imports to use the new service structure.
+ */
+
 export class DataStorage {
-  private static setItem<T>(key: string, data: T): void {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-    } catch (error) {
-      console.error('Failed to save to localStorage:', error);
-    }
+  static saveApplications<T>(applications: T[]): never {
+    throw new Error('DataStorage.saveApplications is deprecated. Services now use backend APIs exclusively.');
   }
 
-  private static getItem<T>(key: string): T | null {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : null;
-    } catch (error) {
-      console.error('Failed to read from localStorage:', error);
-      return null;
-    }
+  static loadApplications<T>(): never {
+    throw new Error('DataStorage.loadApplications is deprecated. Services now use backend APIs exclusively.');
   }
 
-  private static hasItem(key: string): boolean {
-    return localStorage.getItem(key) !== null;
+  static saveGrantCalls<T>(grantCalls: T[]): never {
+    throw new Error('DataStorage.saveGrantCalls is deprecated. Services now use backend APIs exclusively.');
   }
 
-  static saveApplications<T>(applications: T[]): void {
-    this.setItem('applications', applications);
+  static loadGrantCalls<T>(): never {
+    throw new Error('DataStorage.loadGrantCalls is deprecated. Services now use backend APIs exclusively.');
   }
 
-  static loadApplications<T>(fallback: T[]): T[] {
-    const stored = this.getItem<T[]>('applications');
-    return stored || fallback;
+  static initializeFromJSON<T>(key: string, jsonData: T[]): never {
+    throw new Error('DataStorage.initializeFromJSON is deprecated. Services now use backend APIs exclusively.');
   }
 
-  static saveGrantCalls<T>(calls: T[]): void {
-    this.setItem('grantCalls', calls);
+  static clearAll(): never {
+    throw new Error('DataStorage.clearAll is deprecated. Services now use backend APIs exclusively.');
   }
 
-  static loadGrantCalls<T>(fallback: T[]): T[] {
-    const stored = this.getItem<T[]>('grantCalls');
-    return stored || fallback;
+  static hasApplications(): never {
+    throw new Error('DataStorage.hasApplications is deprecated. Services now use backend APIs exclusively.');
   }
 
-  static hasPersistentData(): boolean {
-    return this.hasItem('applications') || this.hasItem('grantCalls');
-  }
-
-  static initializeFromJSON<T>(key: string, jsonData: T[]): T[] {
-    if (!this.hasItem(key)) {
-      this.setItem(key, jsonData);
-    }
-    return this.getItem<T[]>(key) || jsonData;
+  static hasGrantCalls(): never {
+    throw new Error('DataStorage.hasGrantCalls is deprecated. Services now use backend APIs exclusively.');
   }
 }

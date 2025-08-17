@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Save, Send, Upload, User } from 'lucide-react';
-import { getCallById } from '../services/grantCallsService';
+import { getCallById } from '../services/grantCalls';
 import { saveBiodata, getBiodata, submitApplication, type ResearcherBiodata } from '../services/applicationsService';
 import { documentsService } from '../services/documentsService';
 import { useAuth } from '../context/AuthContext';
@@ -42,13 +42,33 @@ const GrantApplicationForm = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [grantCall, setGrantCall] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDraftSaved, setIsDraftSaved] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  
-  const grantCall = id ? getCallById(id) : null;
+
+  useEffect(() => {
+    const loadGrantCall = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        const call = await getCallById(id);
+        setGrantCall(call);
+      } catch (error) {
+        console.error('Error loading grant call:', error);
+        setGrantCall(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadGrantCall();
+  }, [id]);
+
   
   const form = useForm<ApplicationFormData>({
     defaultValues: {
@@ -527,7 +547,7 @@ const GrantApplicationForm = () => {
                           type="number" 
                           placeholder="Enter your age" 
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={(e) => field.onChange(e.target.value)}
                         />
                       </FormControl>
                       <FormMessage />

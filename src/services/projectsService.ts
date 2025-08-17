@@ -1,6 +1,16 @@
-import projectsData from '../data/projects.json';
-import applicationsData from '../data/applications.json';
+/**
+ * DEPRECATED - Projects Service
+ * 
+ * This service has been refactored and moved to:
+ * - src/services/projects/index.ts (main service)
+ * - src/services/projects/api/ (API integration)
+ * - src/services/projects/utils/ (utility functions)
+ * 
+ * Please update your imports to use the new modular structure.
+ * This file will be removed in a future version.
+ */
 
+// Legacy interfaces for backward compatibility
 export interface Milestone {
   id: string;
   title: string;
@@ -73,205 +83,93 @@ export interface Project {
   closureWorkflow?: ClosureWorkflow;
 }
 
-// Type assertion to ensure the imported JSON matches our Project interface
-const typedProjectsData = projectsData as { projects: Project[] };
-const typedApplicationsData = applicationsData as { applications: any[] };
-
-export const getProjectsByUser = (email: string): Project[] => {
-  // Use the already imported applications data
-  const userApprovedApplications = typedApplicationsData.applications.filter(
-    (app: any) => app.email === email && app.status === 'approved'
-  );
-  
-  // Find projects that match user's approved applications
-  return typedProjectsData.projects.filter(project =>
-    userApprovedApplications.some(app => app.id === project.applicationId)
-  );
+// Deprecated functions - throw errors to force migration
+export const getProjectsByUser = (email: string): never => {
+  throw new Error('getProjectsByUser is deprecated. Please import from "services/projects" instead.');
 };
 
-// Synchronous version for easier use in components
-export const getProjectsByUserSync = (email: string): Project[] => {
-  // Use the already imported applications data instead of require
-  const userApprovedApplications = typedApplicationsData.applications.filter(
-    (app: any) => app.email === email && app.status === 'approved'
-  );
-  
-  return typedProjectsData.projects.filter(project =>
-    userApprovedApplications.some(app => app.id === project.applicationId)
-  );
+export const getProjectsByUserSync = (email: string): never => {
+  throw new Error('getProjectsByUserSync is deprecated. Please import from "services/projects" instead.');
 };
 
-export const getAllProjects = (): Project[] => {
-  return typedProjectsData.projects;
+export const getAllProjects = (): never => {
+  throw new Error('getAllProjects is deprecated. Please import from "services/projects" instead.');
 };
 
-export const getProjectById = (id: string): Project | undefined => {
-  return typedProjectsData.projects.find(project => project.id === id);
+export const getProjectById = (id: string): never => {
+  throw new Error('getProjectById is deprecated. Please import from "services/projects" instead.');
 };
 
-export const getStatusColor = (status: Project['status']): string => {
-  switch (status) {
-    case 'active':
-      return 'bg-green-100 text-green-800';
-    case 'completed':
-      return 'bg-blue-100 text-blue-800';
-    case 'on_hold':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'cancelled':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
+// Deprecated utility functions - throw errors to force migration
+export const getStatusColor = (status: Project['status']): never => {
+  throw new Error('getStatusColor is deprecated. Please import from "services/projects" instead.');
 };
 
-export const getMilestoneStatusColor = (status: Milestone['status']): string => {
-  switch (status) {
-    case 'completed':
-      return 'bg-green-100 text-green-800';
-    case 'in_progress':
-      return 'bg-blue-100 text-blue-800';
-    case 'on_hold':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'pending':
-      return 'bg-gray-100 text-gray-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
+export const getMilestoneStatusColor = (status: Milestone['status']): never => {
+  throw new Error('getMilestoneStatusColor is deprecated. Please import from "services/projects" instead.');
 };
 
-export const getRequisitionStatusColor = (status: Requisition['status']): string => {
-  switch (status) {
-    case 'approved':
-      return 'bg-green-100 text-green-800';
-    case 'rejected':
-      return 'bg-red-100 text-red-800';
-    case 'submitted':
-      return 'bg-yellow-100 text-yellow-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
+export const getRequisitionStatusColor = (status: Requisition['status']): never => {
+  throw new Error('getRequisitionStatusColor is deprecated. Please import from "services/projects" instead.');
 };
 
-export const calculateProgress = (milestones: Milestone[]): number => {
-  if (milestones.length === 0) return 0;
-  const completedMilestones = milestones.filter(m => m.status === 'completed').length;
-  return Math.round((completedMilestones / milestones.length) * 100);
+export const calculateProgress = (milestones: Milestone[]): never => {
+  throw new Error('calculateProgress is deprecated. Please import from "services/projects" instead.');
 };
 
-export const checkOverdueMilestones = (project: Project): Project => {
-  const now = new Date();
-  const updatedMilestones = project.milestones.map(milestone => {
-    const dueDate = new Date(milestone.dueDate);
-    const isOverdue = now > dueDate && 
-                     milestone.status !== 'completed' && 
-                     !milestone.progressReportUploaded;
-    
-    return {
-      ...milestone,
-      isOverdue
-    };
-  });
-
-  return {
-    ...project,
-    milestones: updatedMilestones
-  };
+export const checkOverdueMilestones = (project: Project): never => {
+  throw new Error('checkOverdueMilestones is deprecated. Please import from "services/projects" instead.');
 };
 
-// Requisition functions
-export const submitRequisition = (projectId: string, requisition: Omit<Requisition, 'id' | 'requestedDate' | 'status'>): boolean => {
-  // In a real app, this would make an API call
-  console.log('Submitting requisition for project:', projectId, requisition);
-  return true;
+// All remaining functions are deprecated - throw errors to force migration
+export const submitRequisition = (): never => {
+  throw new Error('submitRequisition is deprecated. Please import from "services/projects" instead.');
 };
 
-export const updateRequisitionStatus = (
-  projectId: string, 
-  requisitionId: string, 
-  status: Requisition['status'], 
-  reviewNotes?: string,
-  reviewedBy?: string
-): boolean => {
-  // In a real app, this would make an API call
-  console.log('Updating requisition status:', { projectId, requisitionId, status, reviewNotes, reviewedBy });
-  return true;
+export const updateRequisitionStatus = (): never => {
+  throw new Error('updateRequisitionStatus is deprecated. Please import from "services/projects" instead.');
 };
 
-// Partner functions
-export const addPartner = (projectId: string, partner: Omit<Partner, 'id'>): boolean => {
-  // In a real app, this would make an API call
-  console.log('Adding partner to project:', projectId, partner);
-  return true;
+export const addPartner = (): never => {
+  throw new Error('addPartner is deprecated. Please import from "services/projects" instead.');
 };
 
-export const uploadMOU = (projectId: string, partnerId: string, filename: string): boolean => {
-  // In a real app, this would handle file upload
-  console.log('Uploading MOU for partner:', { projectId, partnerId, filename });
-  return true;
+export const uploadMOU = (): never => {
+  throw new Error('uploadMOU is deprecated. Please import from "services/projects" instead.');
 };
 
-// Progress report functions
-export const uploadProgressReport = (projectId: string, milestoneId: string, filename: string): boolean => {
-  // In a real app, this would handle file upload
-  console.log('Uploading progress report:', { projectId, milestoneId, filename });
-  return true;
+export const uploadProgressReport = (): never => {
+  throw new Error('uploadProgressReport is deprecated. Please import from "services/projects" instead.');
 };
 
-// Final reporting functions
-export const uploadFinalReport = (
-  projectId: string, 
-  reportType: 'narrative' | 'financial', 
-  filename: string
-): boolean => {
-  console.log('Uploading final report:', { projectId, reportType, filename });
-  return true;
+export const uploadFinalReport = (): never => {
+  throw new Error('uploadFinalReport is deprecated. Please import from "services/projects" instead.');
 };
 
-export const submitFinalReports = (projectId: string): boolean => {
-  console.log('Submitting final reports for project:', projectId);
-  return true;
+export const submitFinalReports = (): never => {
+  throw new Error('submitFinalReports is deprecated. Please import from "services/projects" instead.');
 };
 
-export const reviewFinalReports = (
-  projectId: string, 
-  status: 'approved' | 'revision_required',
-  reviewNotes: string,
-  reviewedBy: string
-): boolean => {
-  console.log('Reviewing final reports:', { projectId, status, reviewNotes, reviewedBy });
-  return true;
+export const reviewFinalReports = (): never => {
+  throw new Error('reviewFinalReports is deprecated. Please import from "services/projects" instead.');
 };
 
-// Closure workflow functions
-export const initiateVCSignOff = (projectId: string): string => {
-  const token = `vc_${projectId}_${Date.now()}`;
-  console.log('Initiating VC sign-off with token:', token);
-  return token;
+export const initiateVCSignOff = (): never => {
+  throw new Error('initiateVCSignOff is deprecated. Please import from "services/projects" instead.');
 };
 
-export const getProjectByVCToken = (token: string): Project | null => {
-  // In a real app, this would validate the token and return the project
-  console.log('Getting project by VC token:', token);
-  const projects = typedProjectsData.projects;
-  return projects.find(p => p.closureWorkflow?.vcSignOffToken === token) || null;
+export const getProjectByVCToken = (): never => {
+  throw new Error('getProjectByVCToken is deprecated. Please import from "services/projects" instead.');
 };
 
-export const submitVCSignOff = (
-  token: string, 
-  decision: 'approved' | 'rejected',
-  notes: string,
-  vcName: string
-): boolean => {
-  console.log('VC sign-off submitted:', { token, decision, notes, vcName });
-  return true;
+export const submitVCSignOff = (): never => {
+  throw new Error('submitVCSignOff is deprecated. Please import from "services/projects" instead.');
 };
 
-export const generateClosureCertificate = (projectId: string): boolean => {
-  console.log('Generating closure certificate for project:', projectId);
-  return true;
+export const generateClosureCertificate = (): never => {
+  throw new Error('generateClosureCertificate is deprecated. Please import from "services/projects" instead.');
 };
 
-export const archiveProjectDocuments = (projectId: string): boolean => {
-  console.log('Archiving project documents for project:', projectId);
-  return true;
+export const archiveProjectDocuments = (): never => {
+  throw new Error('archiveProjectDocuments is deprecated. Please import from "services/projects" instead.');
 };

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { uploadFinalReport, submitFinalReports, type Project } from '../services/projectsService';
+import { uploadFinalReport, submitFinalReports, type Project } from '../services/projects';
 import { Upload, FileText, DollarSign, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 
 interface FinalReportUploadProps {
@@ -20,7 +20,7 @@ const FinalReportUpload = ({ project, onUpdate }: FinalReportUploadProps) => {
   const [financialFile, setFinancialFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const finalReport = project.finalReport;
+  const finalReport = project.final_report;
   const isSubmitted = finalReport?.status === 'submitted' || finalReport?.status === 'under_review' || finalReport?.status === 'approved';
 
   const handleFileChange = (type: 'narrative' | 'financial', file: File | null) => {
@@ -36,7 +36,7 @@ const FinalReportUpload = ({ project, onUpdate }: FinalReportUploadProps) => {
     if (!file) return;
 
     try {
-      const success = uploadFinalReport(project.id, type, file.name);
+      const success = await uploadFinalReport(project.id, type, file);
       if (success) {
         toast({
           title: "Report Uploaded",
@@ -54,7 +54,7 @@ const FinalReportUpload = ({ project, onUpdate }: FinalReportUploadProps) => {
   };
 
   const handleSubmitReports = async () => {
-    if (!finalReport?.narrativeReport || !finalReport?.financialReport) {
+    if (!finalReport?.narrative_report || !finalReport?.financial_report) {
       toast({
         title: "Missing Reports",
         description: "Please upload both narrative and financial reports before submitting.",
@@ -111,10 +111,10 @@ const FinalReportUpload = ({ project, onUpdate }: FinalReportUploadProps) => {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {finalReport?.reviewNotes && (
+        {finalReport?.review_notes && (
           <div className="p-4 bg-blue-50 rounded-lg">
             <p className="text-sm font-medium text-blue-800 mb-1">Review Notes:</p>
-            <p className="text-sm text-blue-700">{finalReport.reviewNotes}</p>
+            <p className="text-sm text-muted-foreground">{finalReport.review_notes}</p>
           </div>
         )}
 
@@ -126,11 +126,11 @@ const FinalReportUpload = ({ project, onUpdate }: FinalReportUploadProps) => {
               <Label className="font-medium">Narrative Report</Label>
             </div>
             
-            {finalReport?.narrativeReport ? (
+            {finalReport?.narrative_report ? (
               <div className="p-3 bg-green-50 rounded-lg">
-                <p className="text-sm font-medium text-green-800">{finalReport.narrativeReport.filename}</p>
+                <p className="text-sm font-medium">{finalReport.narrative_report.filename}</p>
                 <p className="text-xs text-green-600">
-                  Uploaded: {new Date(finalReport.narrativeReport.uploadedDate).toLocaleDateString()}
+                  Uploaded: {new Date(finalReport.narrative_report.uploaded_date).toLocaleDateString()}
                 </p>
               </div>
             ) : (
@@ -161,11 +161,11 @@ const FinalReportUpload = ({ project, onUpdate }: FinalReportUploadProps) => {
               <Label className="font-medium">Financial Report</Label>
             </div>
             
-            {finalReport?.financialReport ? (
+            {finalReport?.financial_report ? (
               <div className="p-3 bg-green-50 rounded-lg">
-                <p className="text-sm font-medium text-green-800">{finalReport.financialReport.filename}</p>
+                <p className="text-sm font-medium">{finalReport.financial_report.filename}</p>
                 <p className="text-xs text-green-600">
-                  Uploaded: {new Date(finalReport.financialReport.uploadedDate).toLocaleDateString()}
+                  Uploaded: {new Date(finalReport.financial_report.uploaded_date).toLocaleDateString()}
                 </p>
               </div>
             ) : (
@@ -190,7 +190,7 @@ const FinalReportUpload = ({ project, onUpdate }: FinalReportUploadProps) => {
           </div>
         </div>
 
-        {finalReport?.narrativeReport && finalReport?.financialReport && !isSubmitted && (
+        {finalReport?.narrative_report && finalReport?.financial_report && !isSubmitted && (
           <div className="pt-4 border-t">
             <Button
               onClick={handleSubmitReports}

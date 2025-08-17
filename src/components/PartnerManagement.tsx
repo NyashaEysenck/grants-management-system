@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { addPartner, uploadMOU, type Project, type Partner } from '../services/projectsService';
+import { addPartner, removePartner } from '../services/projects';
 import { Users, Upload, FileText, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 

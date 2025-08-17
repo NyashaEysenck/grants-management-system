@@ -2,14 +2,17 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, User } from '../services/authService';
 import { setAuthInitializing } from '../lib/api';
+import { AuthError } from '../types/error';
+import { parseApiError } from '../utils/errorHandling';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role?: string) => Promise<boolean>;
+  login: (email: string, password: string, role?: string) => Promise<{ success: boolean; error?: AuthError }>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
   isAuthenticated: boolean;
   loading: boolean;
+  lastError: AuthError | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,6 +28,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastError, setLastError] = useState<AuthError | null>(null);
 
   // Check for existing token and user data on mount
   useEffect(() => {
@@ -91,20 +95,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initializeAuth();
   }, []); // No dependencies needed since we're calling authService directly
 
-  const login = async (email: string, password: string, role?: string): Promise<boolean> => {
+  const login = async (email: string, password: string, role?: string): Promise<{ success: boolean; error?: AuthError }> => {
     try {
       setLoading(true);
+      setLastError(null);
       
       const response = await authService.login(email, password, role);
       
       if (response.access_token && response.user) {
         setUser(response.user);
-        return true;
+        return { success: true };
       }
-      return false;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
+      
+      const error = parseApiError(new Error('Login failed'));
+      setLastError(error);
+      return { success: false, error };
+    } catch (err) {
+      console.error('Login error:', err);
+      const error = parseApiError(err);
+      setLastError(error);
+      return { success: false, error };
     } finally {
       setLoading(false);
     }
@@ -142,7 +152,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
     refreshToken,
     isAuthenticated: !!user,
-    loading
+    loading,
+    lastError
   };
 
   return (

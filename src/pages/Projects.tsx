@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
-  getProjectsByUserSync, 
+  getProjectsByUser, 
   getAllProjects,
   getStatusColor, 
   getRequisitionStatusColor,
@@ -10,7 +10,7 @@ import {
   updateRequisitionStatus,
   type Project,
   type Requisition
-} from '../services/projectsService';
+} from '../services/projects';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,36 @@ const Projects = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showRequisitionForm, setShowRequisitionForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const loadProjects = async () => {
+      if (!user) return;
+      
+      setLoading(true);
+      try {
+        let projectData: Project[];
+        if (user.role.toLowerCase() === 'researcher') {
+          projectData = await getProjectsByUser(user.email);
+        } else {
+          projectData = await getAllProjects();
+        }
+        setProjects(projectData.map(checkOverdueMilestones));
+      } catch (error) {
+        console.error('Error loading projects:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load projects. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProjects();
+  }, [user, refreshKey]);
   
   if (!user) {
     return (
@@ -61,9 +91,18 @@ const Projects = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="max-w-7xl">
+        <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
+        <p className="text-gray-600 mt-4">Loading projects...</p>
+      </div>
+    );
+  }
+
   // For researchers, show their projects
   if (user.role.toLowerCase() === 'researcher') {
-    const userProjects = getProjectsByUserSync(user.email).map(checkOverdueMilestones);
+    const userProjects = projects;
     
     return (
       <div className="max-w-7xl" key={refreshKey}>
@@ -83,7 +122,7 @@ const Projects = () => {
           <div className="space-y-6">
             {userProjects.map((project) => {
               const progress = calculateProgress(project.milestones);
-              const overdueMilestones = project.milestones.filter(m => m.isOverdue).length;
+              const overdueMilestones = project.milestones.filter(m => m.is_overdue).length;
               const pendingRequisitions = (project.requisitions || []).filter(r => r.status === 'submitted').length;
               
               return (
@@ -96,12 +135,8 @@ const Projects = () => {
                           <Badge className={getStatusColor(project.status)}>
                             {project.status.replace('_', ' ').toUpperCase()}
                           </Badge>
-                          <span className="text-sm text-gray-500">
-                            Started: {format(new Date(project.startDate), 'MMM dd, yyyy')}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            Due: {format(new Date(project.endDate), 'MMM dd, yyyy')}
-                          </span>
+                          <p className="text-xs text-gray-500">Start: {format(new Date(project.start_date), 'MMM dd, yyyy')}</p>
+                          <p className="text-xs text-gray-500">End: {format(new Date(project.end_date), 'MMM dd, yyyy')}</p>
                           {overdueMilestones > 0 && (
                             <Badge variant="destructive" className="flex items-center gap-1">
                               <AlertTriangle className="h-3 w-3" />
@@ -173,7 +208,7 @@ const Projects = () => {
                             ) : (
                               <div className="space-y-3">
                                 {project.requisitions!.map((requisition) => {
-                                  const milestone = project.milestones.find(m => m.id === requisition.milestoneId);
+                                  const milestone = project.milestones.find(m => m.id === requisition.milestone_id);
                                   return (
                                     <div key={requisition.id} className="border rounded-lg p-4">
                                       <div className="flex items-start justify-between">
@@ -188,17 +223,17 @@ const Projects = () => {
                                             Milestone: {milestone?.title || 'Unknown'}
                                           </p>
                                           <p className="text-sm text-gray-700">{requisition.notes}</p>
-                                          {requisition.reviewNotes && (
+                                          {requisition.review_notes && (
                                             <div className="mt-2 p-2 bg-gray-50 rounded">
                                               <p className="text-xs font-medium text-gray-700">Review Notes:</p>
-                                              <p className="text-xs text-gray-600">{requisition.reviewNotes}</p>
+                                              <p className="text-xs text-gray-600">{requisition.review_notes}</p>
                                             </div>
                                           )}
                                         </div>
                                         <div className="text-right text-xs text-gray-500">
-                                          <p>Requested: {format(new Date(requisition.requestedDate), 'MMM dd, yyyy')}</p>
-                                          {requisition.reviewedDate && (
-                                            <p>Reviewed: {format(new Date(requisition.reviewedDate), 'MMM dd, yyyy')}</p>
+                                          <p>Requested: {format(new Date(requisition.requested_date), 'MMM dd, yyyy')}</p>
+                                          {requisition.reviewed_date && (
+                                            <p>Reviewed: {format(new Date(requisition.reviewed_date), 'MMM dd, yyyy')}</p>
                                           )}
                                         </div>
                                       </div>
@@ -293,14 +328,14 @@ const Projects = () => {
 
   // For grants managers, show all projects with requisition management
   if (user.role.toLowerCase() === 'grants manager') {
-    const allProjects = getAllProjects().map(checkOverdueMilestones);
+    const allProjects = projects;
     const pendingRequisitions = allProjects.flatMap(p => 
       (p.requisitions || []).filter(r => r.status === 'submitted').map(r => ({ ...r, projectTitle: p.title, projectId: p.id }))
     );
 
     const handleRequisitionReview = async (projectId: string, requisitionId: string, status: 'approved' | 'rejected', notes: string) => {
       try {
-        const success = updateRequisitionStatus(projectId, requisitionId, status, notes, user.email);
+        const success = await updateRequisitionStatus(projectId, requisitionId, status, notes, user.email);
         
         if (success) {
           toast({
@@ -346,9 +381,7 @@ const Projects = () => {
                           <span className="text-sm text-gray-600">• {req.projectTitle}</span>
                         </div>
                         <p className="text-sm text-gray-700 mb-2">{req.notes}</p>
-                        <p className="text-xs text-gray-500">
-                          Requested: {format(new Date(req.requestedDate), 'MMM dd, yyyy')}
-                        </p>
+                        <p className="text-xs text-gray-500">Requested: {format(new Date(req.requested_date), 'MMM dd, yyyy')}</p>
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -381,7 +414,7 @@ const Projects = () => {
         <div className="space-y-6">
           {allProjects.map((project) => {
             const progress = calculateProgress(project.milestones);
-            const overdueMilestones = project.milestones.filter(m => m.isOverdue).length;
+            const overdueMilestones = project.milestones.filter(m => m.is_overdue).length;
             
             return (
               <Card key={project.id}>
