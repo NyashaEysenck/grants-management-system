@@ -298,18 +298,6 @@ export const removePartner = async (projectId: string, partnerId: string): Promi
   }
 };
 
-export const completeVCSignOff = async (token: string): Promise<void> => {
-  try {
-    console.log(`Completing VC sign-off for token ${token}`);
-    
-    const response = await projectsApi.completeVCSignOff(token);
-    
-    console.log('VC sign-off completed successfully:', response);
-  } catch (error) {
-    console.error('Error completing VC sign-off:', error);
-    handleApiError(error);
-  }
-};
 
 export const createRequisition = async (projectId: string, requisitionData: any): Promise<void> => {
   try {

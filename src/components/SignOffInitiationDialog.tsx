@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { initiateSignOffWorkflow, type Application } from '../services/applicationsService';
+import { initiateSignOffWorkflow } from '../services/applications/api/signOffApi';
+import { type Application } from '../services/applications/types';
 import { UserPlus, DollarSign, ExternalLink, Copy } from 'lucide-react';
 
 interface SignOffInitiationDialogProps {
@@ -68,29 +69,41 @@ const SignOffInitiationDialog = ({ application, isOpen, onClose }: SignOffInitia
       return;
     }
 
-    const success = initiateSignOffWorkflow(application.id, amount, validApprovers);
-    if (success) {
-      // Generate sign-off links
-      const signOffLinks = validApprovers.map(approver => ({
-        role: approver.role,
-        name: approver.name,
-        email: approver.email,
-        link: `${window.location.origin}/signoff/${application.id}/${approver.role}`
-      }));
+    const handleSignOffInitiation = async () => {
+      try {
+        const result = await initiateSignOffWorkflow(application.id, amount, validApprovers);
+        if (result?.success && result.signOffTokens) {
+          // Generate sign-off links using actual tokens from backend
+          const signOffLinks = result.signOffTokens.map(tokenData => ({
+            role: tokenData.role,
+            name: validApprovers.find(a => a.role === tokenData.role)?.name || '',
+            email: tokenData.email,
+            link: `${window.location.origin}/signoff/${tokenData.token}`
+          }));
 
-      setGeneratedLinks(signOffLinks);
-      
-      toast({
-        title: "Sign-off Initiated",
-        description: "Approval workflow has been started. Sign-off links generated below.",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to initiate sign-off workflow.",
-        variant: "destructive"
-      });
-    }
+          setGeneratedLinks(signOffLinks);
+          
+          toast({
+            title: "Sign-off Initiated",
+            description: "Approval workflow has been started. Sign-off links generated below.",
+          });
+        } else {
+          toast({
+            title: "Initiation Failed",
+            description: "Failed to initiate sign-off workflow. Please try again.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Initiation Failed",
+          description: "Failed to initiate sign-off workflow. Please try again.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    handleSignOffInitiation();
   };
 
   const handleClose = () => {

@@ -176,31 +176,19 @@ export const projectsApi = {
   },
 
   /**
-   * Update milestone status - PLACEHOLDER (Backend endpoint not implemented)
+   * Update milestone status/details
    */
   updateMilestone: async (projectId: string, milestoneId: string, updates: Partial<Milestone>): Promise<void> => {
-    console.warn(`updateMilestone not implemented in backend - projectId: ${projectId}, milestoneId: ${milestoneId}`);
-    // TODO: Implement PUT /projects/{id}/milestones/{milestone_id} in backend
-    throw new Error('Milestone update endpoint not implemented in backend');
+    await apiClient.put(`/projects/${projectId}/milestones/${milestoneId}`, updates);
   },
 
   /**
-   * Remove partner from project - PLACEHOLDER (Backend endpoint not implemented)
+   * Remove partner from project
    */
   removePartner: async (projectId: string, partnerId: string): Promise<void> => {
-    console.warn(`removePartner not implemented in backend - projectId: ${projectId}, partnerId: ${partnerId}`);
-    // TODO: Implement DELETE /projects/{id}/partners/{partner_id} in backend
-    throw new Error('Partner removal endpoint not implemented in backend');
+    await apiClient.delete(`/projects/${projectId}/partners/${partnerId}`);
   },
 
-  /**
-   * Complete VC sign-off process - PLACEHOLDER (Backend endpoint not implemented)
-   */
-  completeVCSignOff: async (token: string): Promise<void> => {
-    console.warn(`completeVCSignOff not implemented in backend - token: ${token}`);
-    // TODO: Implement POST /projects/complete-signoff/{token} in backend
-    throw new Error('Complete VC sign-off endpoint not implemented in backend');
-  },
 
   /**
    * Create requisition for project

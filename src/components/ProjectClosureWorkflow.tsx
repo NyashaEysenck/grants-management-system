@@ -98,7 +98,7 @@ const ProjectClosureWorkflow = ({ project, userRole, userEmail, onUpdate }: Proj
   const handleGenerateClosureCertificate = async () => {
     setIsProcessing(true);
     try {
-      const success = generateClosureCertificate(project.id);
+      const success = await generateClosureCertificate(project.id);
       if (success) {
         toast({
           title: "Closure Certificate Generated",
@@ -120,7 +120,7 @@ const ProjectClosureWorkflow = ({ project, userRole, userEmail, onUpdate }: Proj
   const handleArchiveDocuments = async () => {
     setIsProcessing(true);
     try {
-      const success = archiveProjectDocuments(project.id);
+      const success = await archiveProjectDocuments(project.id);
       if (success) {
         toast({
           title: "Documents Archived",

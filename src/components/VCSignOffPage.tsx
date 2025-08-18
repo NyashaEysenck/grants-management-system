@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import { FileText, CheckCircle, XCircle, DollarSign, User, Calendar } from 'lucide-react';
-import { getProjectByVCToken, submitVCSignOff, completeVCSignOff } from '../services/projects';
+import { getProjectByVCToken, submitVCSignOff, type Project } from '../services/projects';
 import { useToast } from '@/hooks/use-toast';
 
 interface VCSignOffFormData {
@@ -25,6 +25,8 @@ const VCSignOffPage = () => {
   const { toast } = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<VCSignOffFormData>({
     defaultValues: {
@@ -35,47 +37,72 @@ const VCSignOffPage = () => {
   });
 
   useEffect(() => {
-    if (token) {
-      const foundProject = getProjectByVCToken(token);
-      if (foundProject) {
-        setProject(foundProject);
+    const loadProject = async () => {
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const foundProject = await getProjectByVCToken(token);
         
-        // Check if already signed off
-        if (foundProject.closureWorkflow?.status === 'signed_off' || foundProject.closureWorkflow?.status === 'closed') {
-          setIsSubmitted(true);
+        if (foundProject) {
+          setProject(foundProject);
+          
+          // Check if already signed off
+          if (foundProject.closure_workflow?.status === 'signed_off' || foundProject.closure_workflow?.status === 'closed') {
+            setIsSubmitted(true);
+          }
+        } else {
+          toast({
+            title: "Invalid Sign-off Link",
+            description: "This sign-off link is not valid or has expired.",
+            variant: "destructive"
+          });
+          navigate('/');
         }
-      } else {
+      } catch (error) {
+        console.error('Error loading project:', error);
         toast({
-          title: "Invalid Sign-off Link",
-          description: "This sign-off link is not valid or has expired.",
+          title: "Error Loading Project",
+          description: "Failed to load project details. Please try again.",
           variant: "destructive"
         });
         navigate('/');
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+
+    loadProject();
   }, [token, navigate, toast]);
 
   const onSubmit = async (data: VCSignOffFormData) => {
     if (!project || !token) return;
 
-    const success = submitVCSignOff(token, data.decision, data.notes, data.vcName);
-
-    if (success) {
+    try {
+      setIsSubmitting(true);
+      await submitVCSignOff(token, data.decision, data.notes, data.vcName);
+      
       setIsSubmitted(true);
       toast({
         title: "Sign-off Submitted",
         description: `Project has been ${data.decision} successfully.`,
       });
-    } else {
+    } catch (error) {
+      console.error('Error submitting sign-off:', error);
       toast({
         title: "Submission Failed",
         description: "There was an error submitting your sign-off. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  if (!project) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card>
@@ -87,8 +114,20 @@ const VCSignOffPage = () => {
     );
   }
 
-  if (isSubmitted || project.closureWorkflow?.status === 'signed_off' || project.closureWorkflow?.status === 'closed') {
-    const decision = project.closureWorkflow?.vcSignedBy ? 'signed off' : 'processed';
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-gray-500">Project not found.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isSubmitted || project.closure_workflow?.status === 'signed_off' || project.closure_workflow?.status === 'closed') {
+    const decision = project.closure_workflow?.vc_signed_by ? 'signed off' : 'processed';
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="max-w-md">
@@ -96,8 +135,8 @@ const VCSignOffPage = () => {
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Project {decision}</h2>
             <p className="text-gray-600">
-              {project.closureWorkflow?.vcSignedBy 
-                ? `This project has been signed off by ${project.closureWorkflow.vcSignedBy}.`
+              {project.closure_workflow?.vc_signed_by 
+                ? `This project has been signed off by ${project.closure_workflow.vc_signed_by}.`
                 : 'Your sign-off decision has been submitted successfully.'
               }
             </p>
@@ -130,7 +169,7 @@ const VCSignOffPage = () => {
                 <div className="space-y-2">
                   <p className="text-sm">
                     <span className="font-medium">Project Period:</span>{' '}
-                    {format(new Date(project.startDate), 'MMM dd, yyyy')} - {format(new Date(project.endDate), 'MMM dd, yyyy')}
+                    {format(new Date(project.start_date), 'MMM dd, yyyy')} - {format(new Date(project.end_date), 'MMM dd, yyyy')}
                   </p>
                   <p className="text-sm">
                     <span className="font-medium">Status:</span>{' '}
@@ -166,10 +205,10 @@ const VCSignOffPage = () => {
                   <span className="font-medium text-green-900">Narrative Report</span>
                 </div>
                 <p className="text-sm text-green-700">
-                  {project.finalReport?.narrativeReport?.filename || 'narrative_report_final.pdf'}
+                  {project.final_report?.narrative_report?.filename || 'narrative_report_final.pdf'}
                 </p>
                 <p className="text-xs text-green-600">
-                  Status: {project.finalReport?.status === 'approved' ? 'Approved by Grants Manager' : 'Submitted'}
+                  Status: {project.final_report?.status === 'approved' ? 'Approved by Grants Manager' : 'Submitted'}
                 </p>
               </div>
               <div className="p-3 bg-green-50 rounded-lg">
@@ -178,18 +217,18 @@ const VCSignOffPage = () => {
                   <span className="font-medium text-green-900">Financial Report</span>
                 </div>
                 <p className="text-sm text-green-700">
-                  {project.finalReport?.financialReport?.filename || 'financial_report_final.pdf'}
+                  {project.final_report?.financial_report?.filename || 'financial_report_final.pdf'}
                 </p>
                 <p className="text-xs text-green-600">
-                  Status: {project.finalReport?.status === 'approved' ? 'Approved by Grants Manager' : 'Submitted'}
+                  Status: {project.final_report?.status === 'approved' ? 'Approved by Grants Manager' : 'Submitted'}
                 </p>
               </div>
             </div>
             
-            {project.finalReport?.reviewNotes && (
+            {project.final_report?.review_notes && (
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm font-medium text-blue-800 mb-1">Grants Manager Review:</p>
-                <p className="text-sm text-blue-700">{project.finalReport.reviewNotes}</p>
+                <p className="text-sm text-blue-700">{project.final_report.review_notes}</p>
               </div>
             )}
           </CardContent>
@@ -269,8 +308,8 @@ const VCSignOffPage = () => {
                 />
 
                 <div className="flex justify-end pt-6">
-                  <Button type="submit" size="lg">
-                    Submit Final Decision
+                  <Button type="submit" size="lg" disabled={isSubmitting}>
+                    {isSubmitting ? 'Submitting...' : 'Submit Final Decision'}
                   </Button>
                 </div>
               </form>

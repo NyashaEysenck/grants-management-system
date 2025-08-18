@@ -55,4 +55,6 @@ export interface Application {
   revisionCount?: number;
   originalSubmissionDate?: string;
   proposalFileName?: string;
+  proposalFileSize?: number;
+  proposalFileType?: string;
 }
