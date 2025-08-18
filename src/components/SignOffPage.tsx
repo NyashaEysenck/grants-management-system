@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
-import { FileText, CheckCircle, XCircle, DollarSign, User } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, DollarSign, User, Download } from 'lucide-react';
 import { getApplicationBySignOffToken, submitSignOffApproval } from '../services/applications/api/signOffApi';
+import { downloadApplicationDocument } from '../services/documentsService';
 import { type Application, type SignOffApproval } from '../services/applications/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -74,6 +75,31 @@ const SignOffPage = () => {
     
     loadApplicationData();
   }, [token, navigate, toast, form]);
+
+  const handleDownloadDocument = async () => {
+    if (!application?.proposalFileName) {
+      toast({
+        title: "No Document",
+        description: "No document has been uploaded for this application.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await downloadApplicationDocument(application.id, application.proposalFileName);
+      toast({
+        title: "Download Started",
+        description: "The document download has started.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Download Failed",
+        description: error.message || "Failed to download the document.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const onSubmit = async (data: SignOffFormData) => {
     if (!application || !approval || !token) return;
@@ -217,14 +243,20 @@ const SignOffPage = () => {
                   {application.proposalFileName && (
                     <div className="bg-blue-50 p-3 rounded-lg">
                       <h4 className="font-medium text-sm text-blue-700 mb-2">Application Document</h4>
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm text-blue-800">{application.proposalFileName}</span>
-                        {application.proposalFileSize && (
-                          <span className="text-xs text-blue-600">
-                            ({(application.proposalFileSize / 1024 / 1024).toFixed(1)} MB)
-                          </span>
-                        )}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm text-blue-800">{application.proposalFileName}</span>
+                          {application.proposalFileSize && (
+                            <span className="text-xs text-blue-600">
+                              ({(application.proposalFileSize / 1024 / 1024).toFixed(1)} MB)
+                            </span>
+                          )}
+                        </div>
+                        <Button variant="outline" size="sm" onClick={handleDownloadDocument}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
                       </div>
                     </div>
                   )}
