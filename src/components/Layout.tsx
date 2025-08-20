@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { LogOut, Menu } from 'lucide-react';
+import ConnectionStatus from './ConnectionStatus';
+import OfflineIndicator from './OfflineIndicator';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -35,6 +37,7 @@ export function Layout({ children }: LayoutProps) {
             </div>
             
             <div className="flex items-center gap-4">
+              <OfflineIndicator />
               <span className="text-sm text-gray-600">
                 Welcome, {user?.name}
               </span>
@@ -55,6 +58,7 @@ export function Layout({ children }: LayoutProps) {
 
           {/* Main Content */}
           <main className="flex-1 p-6">
+            <ConnectionStatus />
             {children}
           </main>
         </div>

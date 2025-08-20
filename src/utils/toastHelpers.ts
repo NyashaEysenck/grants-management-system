@@ -1,6 +1,9 @@
+import React from 'react';
 import { toast } from '../hooks/use-toast';
+import { ToastAction } from '../components/ui/toast';
 import { AuthError, ErrorCode } from '../types/error';
 import { getErrorMessage, getErrorSuggestions, formatRetryDelay, getRetryDelay } from './errorHandling';
+import offlineHandler from './offlineHandler';
 
 /**
  * Show error toast with enhanced error information
@@ -32,11 +35,10 @@ export function showErrorToast(error: AuthError, retryAction?: () => void) {
 
   // Add retry action for recoverable errors
   if (retryAction && shouldShowRetryAction(error)) {
-    toastConfig.action = {
+    toastConfig.action = React.createElement(ToastAction, {
       altText: 'Retry',
-      onClick: retryAction,
-      children: 'Retry'
-    };
+      onClick: retryAction
+    }, 'Retry');
   }
 
   return toast(toastConfig);
@@ -76,15 +78,23 @@ export function showInfoToast(title: string, description?: string) {
 }
 
 /**
- * Show connection error toast with retry
+ * Show connection error toast with retry and offline handling
  */
-export function showConnectionErrorToast(retryAction?: () => void) {
-  return showErrorToast({
+export function showConnectionErrorToast(retryAction?: () => void, operationType?: string) {
+  const error = {
     code: ErrorCode.NETWORK_ERROR,
     message: 'Connection failed',
     details: 'Unable to connect to the server',
     suggestions: ['Check your internet connection', 'Try again in a moment']
-  }, retryAction);
+  };
+  
+  // Add offline message if operation type is provided
+  if (operationType && offlineHandler.isBackendUnavailable(error)) {
+    const offlineMessage = offlineHandler.getOfflineMessage(operationType);
+    error.details = `${error.details}\n\n${offlineMessage}`;
+  }
+  
+  return showErrorToast(error, retryAction);
 }
 
 /**
@@ -129,5 +139,29 @@ export function showRateLimitToast(retryAfter: number) {
     title: 'Too many attempts',
     description: `Please wait ${retryText} before trying again`,
     variant: 'destructive',
+  });
+}
+
+/**
+ * Show offline operation queued toast
+ */
+export function showOfflineQueuedToast(operationType: string, operationId: string) {
+  const message = offlineHandler.getOfflineMessage(operationType);
+  
+  return toast({
+    title: 'Operation Queued',
+    description: message,
+    variant: 'default',
+  });
+}
+
+/**
+ * Show operations synced toast
+ */
+export function showOperationsSyncedToast(count: number) {
+  return toast({
+    title: 'Operations Synced',
+    description: `${count} pending operation${count !== 1 ? 's' : ''} successfully processed`,
+    variant: 'default',
   });
 }

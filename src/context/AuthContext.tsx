@@ -2,8 +2,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, User } from '../services/authService';
 import { setAuthInitializing } from '../lib/api';
-import { AuthError } from '../types/error';
+import { AuthError, ErrorCode } from '../types/error';
 import { parseApiError } from '../utils/errorHandling';
+import { showConnectionErrorToast, showAuthErrorToast } from '../utils/toastHelpers';
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +14,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   lastError: AuthError | null;
+  isBackendAvailable: boolean;
+  retryConnection: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +32,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastError, setLastError] = useState<AuthError | null>(null);
+  const [isBackendAvailable, setIsBackendAvailable] = useState(true);
+  const [connectionRetryCount, setConnectionRetryCount] = useState(0);
 
   // Check for existing token and user data on mount
   useEffect(() => {
@@ -69,6 +74,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }
             } catch (refreshError) {
               console.error('❌ Token refresh failed during initialization:', refreshError);
+              const parsedError = parseApiError(refreshError);
+              
+              // Check if it's a network error (backend unavailable)
+              if (parsedError.code === ErrorCode.NETWORK_ERROR) {
+                setIsBackendAvailable(false);
+                console.log('🔌 Backend appears to be unavailable during token refresh');
+              }
+              
               authService.clearTokens();
               setUser(null);
             }
@@ -82,6 +95,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (error) {
         console.error('❌ Auth initialization error:', error);
+        const parsedError = parseApiError(error);
+        
+        // Check if it's a network error (backend unavailable)
+        if (parsedError.code === ErrorCode.NETWORK_ERROR) {
+          setIsBackendAvailable(false);
+          console.log('🔌 Backend appears to be unavailable during initialization');
+        }
+        
         authService.clearTokens();
         setUser(null);
       } finally {
@@ -114,6 +135,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Login error:', err);
       const error = parseApiError(err);
       setLastError(error);
+      
+      // Check if it's a network error and update backend availability
+      if (error.code === ErrorCode.NETWORK_ERROR) {
+        setIsBackendAvailable(false);
+        setConnectionRetryCount(prev => prev + 1);
+        
+        // Show connection error toast with retry option
+        showConnectionErrorToast(() => {
+          setConnectionRetryCount(0);
+          retryConnection();
+        });
+      } else {
+        // For other auth errors, show specific error toast
+        showAuthErrorToast(error);
+      }
+      
       return { success: false, error };
     } finally {
       setLoading(false);
@@ -123,9 +160,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshToken = async (): Promise<boolean> => {
     try {
       const response = await authService.refreshToken();
-      return !!response;
+      if (response) {
+        setIsBackendAvailable(true);
+        setConnectionRetryCount(0);
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Token refresh error:', error);
+      const parsedError = parseApiError(error);
+      
+      // Check if it's a network error
+      if (parsedError.code === ErrorCode.NETWORK_ERROR) {
+        setIsBackendAvailable(false);
+        setConnectionRetryCount(prev => prev + 1);
+      }
+      
       await logout();
       return false;
     }
@@ -146,6 +196,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const retryConnection = async (): Promise<void> => {
+    console.log('🔄 Retrying connection to backend...');
+    setLoading(true);
+    
+    try {
+      // Try a simple health check or token refresh
+      const userData = authService.getUserData();
+      if (userData) {
+        const response = await authService.refreshToken();
+        if (response) {
+          setIsBackendAvailable(true);
+          setConnectionRetryCount(0);
+          setUser(userData);
+          console.log('✅ Connection restored successfully');
+          return;
+        }
+      }
+      
+      // If no user data, just test backend availability
+      // This could be a simple ping endpoint
+      setIsBackendAvailable(true);
+      setConnectionRetryCount(0);
+      console.log('✅ Backend connection restored');
+      
+    } catch (error) {
+      console.error('❌ Connection retry failed:', error);
+      const parsedError = parseApiError(error);
+      
+      if (parsedError.code === ErrorCode.NETWORK_ERROR) {
+        setIsBackendAvailable(false);
+        setConnectionRetryCount(prev => prev + 1);
+        
+        // Show error toast for failed retry
+        showConnectionErrorToast(() => retryConnection());
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     user,
     login,
@@ -153,7 +243,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     refreshToken,
     isAuthenticated: !!user,
     loading,
-    lastError
+    lastError,
+    isBackendAvailable,
+    retryConnection
   };
 
   return (

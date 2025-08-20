@@ -11,6 +11,7 @@ import { LogIn, Eye, EyeOff } from 'lucide-react';
 import { AuthError } from '../types/error';
 import { validateEmail, validatePassword } from '../utils/errorHandling';
 import { showSuccessToast, showAuthErrorToast } from '../utils/toastHelpers';
+import ConnectionStatus from './ConnectionStatus';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -104,8 +105,10 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+      <div className="w-full max-w-md">
+        <ConnectionStatus />
+        <Card className="w-full">
+          <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-blue-100 rounded-full">
               <LogIn className="h-6 w-6 text-blue-600" />
@@ -184,7 +187,8 @@ const LoginForm = () => {
             </div>
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };
