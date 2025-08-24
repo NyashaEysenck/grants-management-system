@@ -103,7 +103,7 @@ const Documents = () => {
     }
   });
 
-  const handleUpload = (data: UploadFormData) => {
+  const handleUpload = async (data: UploadFormData) => {
     const pendingFile = sessionStorage.getItem('pendingFile');
     if (!pendingFile) {
       toast({
@@ -117,12 +117,10 @@ const Documents = () => {
     const fileInfo = JSON.parse(pendingFile);
     
     try {
-      documentsService.uploadDocument(
+      await documentsService.uploadDocument(
         data.name,
         data.folder,
-        fileInfo.name,
-        user.email,
-        fileInfo.size,
+        fileInfo,
         data.notes
       );
 
@@ -143,7 +141,7 @@ const Documents = () => {
     }
   };
 
-  const handleVersionUpload = (data: VersionUploadData) => {
+  const handleVersionUpload = async (data: VersionUploadData) => {
     if (!selectedDocument) return;
 
     const pendingFile = sessionStorage.getItem('pendingFile');
@@ -158,11 +156,9 @@ const Documents = () => {
 
     const fileInfo = JSON.parse(pendingFile);
     
-    const success = documentsService.uploadNewVersion(
+    const success = await documentsService.uploadNewVersion(
       selectedDocument.id,
-      fileInfo.name,
-      user.email,
-      fileInfo.size,
+      fileInfo,
       data.notes
     );
 
@@ -232,17 +228,17 @@ const Documents = () => {
     });
   };
 
-  const getFilteredDocuments = () => {
+  const getFilteredDocuments = async () => {
     let documents = isRestrictedUser 
       ? documentsService.getDocumentsByUser(user.email)
-      : documentsService.getAllDocuments();
+      : await documentsService.getAllDocuments();
 
     if (selectedFolder !== 'all') {
       documents = documents.filter(doc => doc.folder === selectedFolder);
     }
 
     if (searchQuery.trim()) {
-      documents = documentsService.searchDocuments(searchQuery, user.email, isRestrictedUser);
+      documents = await documentsService.searchDocuments(searchQuery, user.email, isRestrictedUser);
     }
 
     return documents;
@@ -259,7 +255,15 @@ const Documents = () => {
   };
 
   const stats = documentsService.getDocumentStats();
-  const filteredDocuments = getFilteredDocuments();
+  const [filteredDocuments, setFilteredDocuments] = React.useState<Document[]>([]);
+
+  React.useEffect(() => {
+    const loadDocuments = async () => {
+      const docs = await getFilteredDocuments();
+      setFilteredDocuments(docs);
+    };
+    loadDocuments();
+  }, [searchQuery, selectedFolder, isRestrictedUser, user.email]);
 
   return (
     <div className="max-w-7xl space-y-6">

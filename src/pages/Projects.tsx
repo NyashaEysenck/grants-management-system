@@ -335,17 +335,14 @@ const Projects = () => {
 
     const handleRequisitionReview = async (projectId: string, requisitionId: string, status: 'approved' | 'rejected', notes: string) => {
       try {
-        const success = await updateRequisitionStatus(projectId, requisitionId, status, notes, user.email);
+        await updateRequisitionStatus(projectId, requisitionId, status, notes, user.email);
         
-        if (success) {
-          toast({
-            title: "Requisition Updated",
-            description: `Requisition has been ${status}.`,
-          });
-          handleRefresh();
-        } else {
-          throw new Error('Failed to update requisition');
-        }
+        // If we reach here, the update was successful
+        toast({
+          title: "Requisition Updated",
+          description: `Requisition has been ${status}.`,
+        });
+        handleRefresh();
       } catch (error) {
         toast({
           title: "Update Failed",
