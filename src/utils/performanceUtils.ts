@@ -55,7 +55,8 @@ export function observePerformance() {
     const lcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       const lastEntry = entries[entries.length - 1];
-      if (process.env.NODE_ENV === 'development') {
+      // Only log in development when __DEV__ is available
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.log('LCP:', lastEntry.startTime);
       }
     });
@@ -65,7 +66,7 @@ export function observePerformance() {
     const fidObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       entries.forEach((entry: any) => {
-        if (process.env.NODE_ENV === 'development') {
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
           console.log('FID:', entry.processingStart - entry.startTime);
         }
       });
@@ -81,7 +82,7 @@ export function observePerformance() {
           clsValue += entry.value;
         }
       });
-      if (process.env.NODE_ENV === 'development') {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.log('CLS:', clsValue);
       }
     });
@@ -90,6 +91,6 @@ export function observePerformance() {
 }
 
 // Initialize performance monitoring in development
-if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && typeof __DEV__ !== 'undefined' && __DEV__) {
   observePerformance();
 }

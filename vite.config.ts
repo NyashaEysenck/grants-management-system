@@ -59,7 +59,8 @@ export default defineConfig(({ mode }) => {
         name: 'remove-console',
         transform(code: string, id: string) {
           if (id.includes('node_modules')) return null;
-          return code.replace(/console\.(log|debug|info|warn|error|assert|dir|dirxml|group|groupEnd|time|timeEnd|count|trace|profile|profileEnd)\(.*?\);?/g, '');
+          const transformed = code.replace(/console\.(log|debug|info|warn|error|assert|dir|dirxml|group|groupEnd|time|timeEnd|count|trace|profile|profileEnd)\(.*?\);?/g, '');
+          return transformed !== code ? transformed : null;
         }
       }
     ].filter(Boolean),
