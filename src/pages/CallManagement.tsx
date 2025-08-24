@@ -1,19 +1,24 @@
-
 import React, { useState, useEffect } from 'react';
-import { getAllCalls, createCall, updateCall, toggleCallStatus, GrantCall } from '../services/grantCalls';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Badge } from '../components/ui/badge';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../hooks/use-toast';
+import { Plus, Edit, Trash2, Eye, Calendar, Building, Users, FileText } from 'lucide-react';
+import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Plus, Edit, ToggleLeft, ToggleRight } from 'lucide-react';
+import * as z from 'zod';
+import { getAllCalls, createCall, updateCall, deleteCall, toggleCallStatus } from '../services/grantCalls';
+import type { GrantCall } from '../services/grantCalls/api/types';
+import { GRANT_TYPE_OPTIONS } from '../constants/grantTypes';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { ToggleLeft, ToggleRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const callFormSchema = z.object({
@@ -212,11 +217,12 @@ const CallManagement = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Research">Research</SelectItem>
-                          <SelectItem value="Innovation">Innovation</SelectItem>
-                          <SelectItem value="Environmental">Environmental</SelectItem>
-                          <SelectItem value="Healthcare">Healthcare</SelectItem>
-                          <SelectItem value="Education">Education</SelectItem>
+                          <SelectItem value="ORI">ORI</SelectItem>
+                          <SelectItem value="External">External</SelectItem>
+                          <SelectItem value="Scholarship">Scholarship</SelectItem>
+                          <SelectItem value="Travel/Conference">Travel/Conference</SelectItem>
+                          <SelectItem value="GOVT">GOVT</SelectItem>
+                          <SelectItem value="Fellowship">Fellowship</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

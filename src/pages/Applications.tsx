@@ -16,6 +16,8 @@ import {
   addReviewComment,
   type Application 
 } from '../services/applicationsService';
+import { getAllCalls } from '../services/grantCalls';
+import type { GrantCall } from '../services/grantCalls/api/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -48,6 +50,7 @@ const Applications = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [grantCalls, setGrantCalls] = useState<GrantCall[]>([]);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [isAssignReviewersOpen, setIsAssignReviewersOpen] = useState(false);
   const [isSignOffInitiationOpen, setIsSignOffInitiationOpen] = useState(false);
@@ -77,14 +80,28 @@ const Applications = () => {
     const [error, setError] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
 
+    // Create a mapping of grant call ID to grant call type for researcher view
+    const grantCallTypeMap = useMemo(() => {
+      const map = new Map<string, string>();
+      grantCalls.forEach(call => {
+        map.set(call.id, call.type);
+      });
+      return map;
+    }, [grantCalls]);
+
     const loadUserApplications = async (showToast = false) => {
       try {
         setLoading(true);
         setError(null);
         console.log('Loading applications for researcher...');
         
-        const applications = await getUserApplications();
+        const [applications, calls] = await Promise.all([
+          getUserApplications(),
+          getAllCalls()
+        ]);
+        
         setUserApplications(applications);
+        setGrantCalls(calls);
         
         if (showToast) {
           toast({
@@ -93,11 +110,12 @@ const Applications = () => {
           });
         }
         
-        console.log(`Loaded ${applications.length} applications for researcher`);
+        console.log(`Loaded ${applications.length} applications and ${calls.length} grant calls for researcher`);
       } catch (error: any) {
         console.error('Error loading researcher applications:', error);
         setError(error.message || 'Failed to load applications');
         setUserApplications([]); // Clear applications on error
+        setGrantCalls([]);
         
         toast({
           title: "Failed to Load Applications",
@@ -387,7 +405,9 @@ const Applications = () => {
                           <TableCell className="font-medium">
                             {application.proposalTitle}
                           </TableCell>
-                          <TableCell>Research Grant</TableCell>
+                          <TableCell>
+                            {grantCallTypeMap.get(application.grantId) || 'Unknown'}
+                          </TableCell>
                           <TableCell>
                             {format(new Date(application.submissionDate), 'MMM dd, yyyy')}
                           </TableCell>
@@ -521,8 +541,13 @@ const Applications = () => {
         setError(null);
         console.log('Loading applications for grants manager...');
         
-        const applications = await getAllApplications();
+        const [applications, calls] = await Promise.all([
+          getAllApplications(),
+          getAllCalls()
+        ]);
+        
         setAllApplications(applications);
+        setGrantCalls(calls);
         
         if (showToast) {
           toast({
@@ -531,11 +556,12 @@ const Applications = () => {
           });
         }
         
-        console.log(`Loaded ${applications.length} applications successfully`);
+        console.log(`Loaded ${applications.length} applications and ${calls.length} grant calls successfully`);
       } catch (error: any) {
         console.error('Error loading applications:', error);
         setError(error.message || 'Failed to load applications');
         setAllApplications([]); // Clear applications on error
+        setGrantCalls([]);
         
         toast({
           title: "Failed to Load Applications",
@@ -556,10 +582,22 @@ const Applications = () => {
       loadApplications(true);
     };
     
+    // Create a mapping of grant call ID to grant call type
+    const grantCallTypeMap = useMemo(() => {
+      const map = new Map<string, string>();
+      grantCalls.forEach(call => {
+        map.set(call.id, call.type);
+      });
+      return map;
+    }, [grantCalls]);
+
     // Filter applications
     const filteredApplications = allApplications.filter(app => {
       if (statusFilter !== 'all' && app.status !== statusFilter) return false;
-      if (typeFilter !== 'all' && typeFilter !== 'research') return false;
+      if (typeFilter !== 'all') {
+        const grantType = grantCallTypeMap.get(app.grantId);
+        if (grantType !== typeFilter) return false;
+      }
       return true;
     });
 
@@ -869,7 +907,12 @@ const Applications = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="research">Research Grant</SelectItem>
+                      <SelectItem value="ORI">ORI</SelectItem>
+                      <SelectItem value="External">External</SelectItem>
+                      <SelectItem value="Scholarship">Scholarship</SelectItem>
+                      <SelectItem value="Travel/Conference">Travel/Conference</SelectItem>
+                      <SelectItem value="GOVT">GOVT</SelectItem>
+                      <SelectItem value="Fellowship">Fellowship</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -934,7 +977,9 @@ const Applications = () => {
                           {application.proposalFileName ? 'Yes' : 'No'}
                         </span>
                       </TableCell>
-                      <TableCell>Research Grant</TableCell>
+                      <TableCell>
+                        {grantCallTypeMap.get(application.grantId) || 'Unknown'}
+                      </TableCell>
                       <TableCell>
                         {format(new Date(application.submissionDate), 'MMM dd, yyyy')}
                       </TableCell>
