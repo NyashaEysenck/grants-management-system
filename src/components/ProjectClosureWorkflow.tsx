@@ -159,8 +159,8 @@ const ProjectClosureWorkflow = ({ project, userRole, userEmail, onUpdate }: Proj
                             finalReport?.status === 'approved' && 
                             closureWorkflow?.status !== 'vc_review';
   const canGenerateCertificate = closureWorkflow?.status === 'signed_off' && 
-                                !closureWorkflow?.closure_certificate_generated;
-  const canArchive = closureWorkflow?.closure_certificate_generated && 
+                                !closureWorkflow?.closureCertificateGenerated;
+  const canArchive = closureWorkflow?.closureCertificateGenerated && 
                     project.status !== 'closed';
 
   return (
@@ -252,15 +252,15 @@ const ProjectClosureWorkflow = ({ project, userRole, userEmail, onUpdate }: Proj
               <span className="font-medium text-blue-900">VC Approved</span>
             </div>
             <p className="text-sm text-blue-700 mb-2">
-              Signed off by: {closureWorkflow.vc_signed_by}
+              Signed off by: {closureWorkflow.vcSignedBy}
             </p>
             <p className="text-sm text-blue-700">
-              Date: {new Date(closureWorkflow.vc_signed_date).toLocaleDateString()}
+              Date: {new Date(closureWorkflow.vcSignedDate).toLocaleDateString()}
             </p>
-            {closureWorkflow.vc_notes && (
+            {closureWorkflow.vcNotes && (
               <div className="mt-2 p-2 bg-white rounded">
                 <p className="text-xs font-medium text-blue-800">VC Notes:</p>
-                <p className="text-sm text-blue-700">{closureWorkflow.vc_notes}</p>
+                <p className="text-sm text-blue-700">{closureWorkflow.vcNotes}</p>
               </div>
             )}
           </div>
@@ -282,13 +282,13 @@ const ProjectClosureWorkflow = ({ project, userRole, userEmail, onUpdate }: Proj
         )}
 
         {/* Download Closure Certificate */}
-        {closureWorkflow?.closure_certificate_generated && (
+        {closureWorkflow?.closureCertificateGenerated && (
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900">Closure Certificate</p>
                 <p className="text-sm text-gray-600">
-                  Certificate generated on {closureWorkflow.closure_certificate_date}
+                  Certificate generated on {closureWorkflow.closureCertificateDate}
                 </p>
               </div>
               <Button variant="outline" size="sm">

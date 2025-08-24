@@ -127,7 +127,7 @@ const VCSignOffPage = () => {
   }
 
   if (isSubmitted || project.closure_workflow?.status === 'signed_off' || project.closure_workflow?.status === 'closed') {
-    const decision = project.closure_workflow?.vc_signed_by ? 'signed off' : 'processed';
+    const decision = project.closure_workflow?.vcSignedBy ? 'signed off' : 'processed';
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="max-w-md">
@@ -135,8 +135,8 @@ const VCSignOffPage = () => {
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Project {decision}</h2>
             <p className="text-gray-600">
-              {project.closure_workflow?.vc_signed_by 
-                ? `This project has been signed off by ${project.closure_workflow.vc_signed_by}.`
+              {project.closure_workflow?.vcSignedBy 
+                ? `This project has been signed off by ${project.closure_workflow.vcSignedBy}.`
                 : 'Your sign-off decision has been submitted successfully.'
               }
             </p>
