@@ -449,7 +449,7 @@ const Applications = () => {
 
             {/* Sign-off Status Cards */}
             {filteredApplications
-              .filter(app => app.status === 'awaiting_signoff' || app.status === 'signoff_complete' || app.status === 'contract_pending' || app.status === 'contract_received')
+              .filter(app => app.status === 'awaiting_signoff' || app.status === 'signoff_approved' || app.status === 'contract_pending' || app.status === 'contract_received')
               .map(application => (
                 <SignOffStatusCard 
                   key={application.id} 

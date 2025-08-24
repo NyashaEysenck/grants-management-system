@@ -38,8 +38,8 @@ const SignOffStatusCard = ({ application, onContractUpload }: SignOffStatusCardP
     }
   };
 
-  const canDownloadAwardLetter = application.status === 'signoff_complete' && application.awardLetterGenerated;
-  const canUploadContract = application.status === 'signoff_complete';
+  const canDownloadAwardLetter = application.status === 'signoff_approved' && application.awardLetterGenerated;
+  const canUploadContract = application.status === 'signoff_approved';
   const showContractStatus = application.status === 'contract_pending' || application.status === 'contract_received';
 
   return (
