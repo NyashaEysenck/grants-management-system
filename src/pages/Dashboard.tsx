@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getOpenCalls, getAllCalls } from '../services/grantCalls';
 import { getAllApplications } from '../services/applicationsService';
 import { getAllProjects } from '../services/projects';
-import { Calendar, Building, Tag, AlertTriangle, Users, FileText, Award, Clock, CheckCircle, DollarSign, Search, Filter } from 'lucide-react';
+import { Calendar, Building, Tag, AlertTriangle, Users, FileText, Award, Clock, CheckCircle, DollarSign, Search, Filter, Settings } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -449,6 +449,137 @@ const Dashboard = () => {
             ))}
           </div>
         )}
+      </div>
+    );
+  }
+
+  // Admin Dashboard
+  if (user?.role.toLowerCase() === 'admin') {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-gray-600">System administration and management tools</p>
+        </div>
+
+        {/* Quick Links Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-blue-500" />
+              Quick Links
+            </CardTitle>
+            <CardDescription>
+              Access key administrative functions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-200" onClick={() => navigate('/user-management')}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Users className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">User Management</CardTitle>
+                      <CardDescription className="text-sm">
+                        Manage user accounts and permissions
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardFooter className="pt-0">
+                  <Button variant="outline" className="w-full">
+                    Manage Users
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-green-200" onClick={() => navigate('/system-config')}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Settings className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">System Config</CardTitle>
+                      <CardDescription className="text-sm">
+                        Configure system settings and preferences
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardFooter className="pt-0">
+                  <Button variant="outline" className="w-full">
+                    Configure System
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-purple-200" onClick={() => navigate('/documents')}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <FileText className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Documents</CardTitle>
+                      <CardDescription className="text-sm">
+                        Access and manage system documents
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardFooter className="pt-0">
+                  <Button variant="outline" className="w-full">
+                    View Documents
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* System Status Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              System Status
+            </CardTitle>
+            <CardDescription>
+              Current system health and status
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                <CheckCircle className="h-8 w-8 text-green-500" />
+                <div>
+                  <p className="font-medium text-green-800">System Online</p>
+                  <p className="text-sm text-green-600">All services running</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <Users className="h-8 w-8 text-blue-500" />
+                <div>
+                  <p className="font-medium text-blue-800">Active Users</p>
+                  <p className="text-sm text-blue-600">System accessible</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <FileText className="h-8 w-8 text-purple-500" />
+                <div>
+                  <p className="font-medium text-purple-800">Data Integrity</p>
+                  <p className="text-sm text-purple-600">All systems normal</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

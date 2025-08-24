@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -6,7 +6,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/use-toast';
-import { Plus, Edit, Trash2, Eye, Calendar, Building, Users, FileText } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Calendar, Building, Users, FileText, Search, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../components/ui/form';
@@ -38,6 +38,9 @@ const CallManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<GrantCall | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
     const loadCalls = async () => {
@@ -171,6 +174,50 @@ const CallManagement = () => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
+  };
+
+  // Get unique types and sponsors for filter options
+  const availableTypes = useMemo(() => {
+    const types = [...new Set(calls.map(call => call.type))];
+    return types.sort();
+  }, [calls]);
+
+  const availableStatuses = useMemo(() => {
+    const statuses = [...new Set(calls.map(call => call.status))];
+    return statuses.sort();
+  }, [calls]);
+
+  // Filter and search grant calls
+  const filteredCalls = useMemo(() => {
+    return calls.filter(call => {
+      // Search filter
+      const matchesSearch = searchQuery === '' || 
+        call.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        call.scope.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        call.sponsor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        call.type.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Type filter
+      const matchesType = typeFilter === 'all' || call.type === typeFilter;
+
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || call.status === statusFilter;
+
+      return matchesSearch && matchesType && matchesStatus;
+    });
+  }, [calls, searchQuery, typeFilter, statusFilter]);
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setTypeFilter('all');
+    setStatusFilter('all');
+  };
+
+  const handleSearch = () => {
+    // The search is already reactive through the filteredCalls useMemo
+    // This function can be used for additional search actions if needed
+    // For now, it serves as a visual trigger for users who prefer clicking
+    console.log('Search triggered with query:', searchQuery);
   };
 
   return (
@@ -312,6 +359,84 @@ const CallManagement = () => {
         </Dialog>
       </div>
 
+      {/* Search and Filter Section */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search Input */}
+            <div className="flex-1">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search by title, scope, sponsor, or type..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                </div>
+                <Button onClick={handleSearch} className="flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Search
+                </Button>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="flex gap-3">
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-48">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {availableTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-48">
+                  <Building className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {availableStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {(searchQuery || typeFilter !== 'all' || statusFilter !== 'all') && (
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Results Summary */}
+          <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+            <span>
+              Showing {filteredCalls.length} of {calls.length} grant calls
+            </span>
+            {(searchQuery || typeFilter !== 'all' || statusFilter !== 'all') && (
+              <span className="text-blue-600">
+                Filters active
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Grant Calls</CardTitle>
@@ -329,7 +454,7 @@ const CallManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {calls.map((call) => (
+              {filteredCalls.map((call) => (
                 <TableRow key={call.id}>
                   <TableCell className="font-medium">{call.title}</TableCell>
                   <TableCell>{call.type}</TableCell>
@@ -404,11 +529,12 @@ const CallManagement = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Research">Research</SelectItem>
-                        <SelectItem value="Innovation">Innovation</SelectItem>
-                        <SelectItem value="Environmental">Environmental</SelectItem>
-                        <SelectItem value="Healthcare">Healthcare</SelectItem>
-                        <SelectItem value="Education">Education</SelectItem>
+                        <SelectItem value="ORI">ORI</SelectItem>
+                        <SelectItem value="External">External</SelectItem>
+                        <SelectItem value="Scholarship">Scholarship</SelectItem>
+                        <SelectItem value="Travel/Conference">Travel/Conference</SelectItem>
+                        <SelectItem value="GOVT">GOVT</SelectItem>
+                        <SelectItem value="Fellowship">Fellowship</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
