@@ -59,7 +59,9 @@ export default defineConfig(({ mode }) => {
         name: 'remove-console',
         transform(code: string, id: string) {
           if (id.includes('node_modules')) return null;
-          const transformed = code.replace(/console\.(log|debug|info|warn|error|assert|dir|dirxml|group|groupEnd|time|timeEnd|count|trace|profile|profileEnd)\(.*?\);?/g, '');
+          // Safer regex: remove entire lines that start with console.* calls
+          // Avoids breaking when arguments contain parentheses like "getUserApplications()"
+          const transformed = code.replace(/^[\t ]*console\.(log|debug|info|warn|error|assert|dir|dirxml|group|groupEnd|time|timeEnd|count|trace|profile|profileEnd)\([^)]*\);?[\t ]*$/gm, '');
           return transformed !== code ? transformed : null;
         }
       }
