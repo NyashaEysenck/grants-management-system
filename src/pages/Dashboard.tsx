@@ -61,7 +61,7 @@ const Dashboard = () => {
       app.status === 'submitted' || app.status === 'under_review'
     ).length;
     const issuedAwards = allApplications.filter(app => 
-      app.status === 'approved' || app.status === 'signoff_complete' || app.status === 'contract_received'
+      app.status === 'manager_approved' || app.status === 'signoff_approved' || app.status === 'contract_received'
     ).length;
 
     // Calculate alerts

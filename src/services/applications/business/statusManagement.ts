@@ -24,14 +24,14 @@ export const isValidStatusTransition = (
 ): boolean => {
   const validTransitions: Record<Application['status'], Application['status'][]> = {
     'submitted': ['under_review', 'withdrawn', 'editable'],
-    'under_review': ['approved', 'rejected', 'needs_revision'],
-    'approved': ['awaiting_signoff', 'rejected'],
+    'under_review': ['manager_approved', 'rejected', 'needs_revision'],
+    'manager_approved': ['awaiting_signoff', 'rejected'],
     'rejected': ['editable'], // Can be made editable for resubmission
     'withdrawn': ['editable'], // Can be made editable for resubmission
     'editable': ['submitted'],
     'needs_revision': ['submitted', 'editable'],
-    'awaiting_signoff': ['signoff_complete', 'rejected'],
-    'signoff_complete': ['contract_pending'],
+    'awaiting_signoff': ['signoff_approved', 'rejected'],
+    'signoff_approved': ['contract_pending'],
     'contract_pending': ['contract_received'],
     'contract_received': [] // Final state
   };
@@ -45,14 +45,14 @@ export const isValidStatusTransition = (
 export const getNextPossibleStatuses = (currentStatus: Application['status']): Application['status'][] => {
   const validTransitions: Record<Application['status'], Application['status'][]> = {
     'submitted': ['under_review', 'withdrawn', 'editable'],
-    'under_review': ['approved', 'rejected', 'needs_revision'],
-    'approved': ['awaiting_signoff', 'rejected'],
+    'under_review': ['manager_approved', 'rejected', 'needs_revision'],
+    'manager_approved': ['awaiting_signoff', 'rejected'],
     'rejected': ['editable'],
     'withdrawn': ['editable'],
     'editable': ['submitted'],
     'needs_revision': ['submitted', 'editable'],
-    'awaiting_signoff': ['signoff_complete', 'rejected'],
-    'signoff_complete': ['contract_pending'],
+    'awaiting_signoff': ['signoff_approved', 'rejected'],
+    'signoff_approved': ['contract_pending'],
     'contract_pending': ['contract_received'],
     'contract_received': []
   };
@@ -71,13 +71,13 @@ export const getStatusPermissions = (status: Application['status']): {
   const permissions = {
     'submitted': { requiresAdmin: false, requiresReviewer: false, requiresApplicant: true },
     'under_review': { requiresAdmin: true, requiresReviewer: true, requiresApplicant: false },
-    'approved': { requiresAdmin: true, requiresReviewer: true, requiresApplicant: false },
+    'manager_approved': { requiresAdmin: true, requiresReviewer: true, requiresApplicant: false },
     'rejected': { requiresAdmin: true, requiresReviewer: true, requiresApplicant: false },
     'withdrawn': { requiresAdmin: false, requiresReviewer: false, requiresApplicant: true },
     'editable': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false },
     'needs_revision': { requiresAdmin: true, requiresReviewer: true, requiresApplicant: false },
     'awaiting_signoff': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false },
-    'signoff_complete': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false },
+    'signoff_approved': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false },
     'contract_pending': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false },
     'contract_received': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false }
   };

@@ -9,8 +9,10 @@ export const getStatusColor = (status: Application['status']): string => {
       return 'bg-blue-100 text-blue-800';
     case 'under_review':
       return 'bg-yellow-100 text-yellow-800';
-    case 'approved':
+    case 'manager_approved':
       return 'bg-green-100 text-green-800';
+    case 'signoff_approved':
+      return 'bg-emerald-100 text-emerald-800';
     case 'rejected':
       return 'bg-red-100 text-red-800';
     case 'withdrawn':
@@ -21,8 +23,6 @@ export const getStatusColor = (status: Application['status']): string => {
       return 'bg-purple-100 text-purple-800';
     case 'awaiting_signoff':
       return 'bg-purple-100 text-purple-800';
-    case 'signoff_complete':
-      return 'bg-indigo-100 text-indigo-800';
     case 'contract_pending':
       return 'bg-cyan-100 text-cyan-800';
     case 'contract_received':
@@ -38,13 +38,13 @@ export const getStatusColor = (status: Application['status']): string => {
 export const STATUS_LABELS: Record<Application['status'], string> = {
   'submitted': 'Submitted',
   'under_review': 'Under Review',
-  'approved': 'Approved',
+  'manager_approved': 'Manager Approved',
   'rejected': 'Rejected',
   'withdrawn': 'Withdrawn',
   'editable': 'Editable',
   'needs_revision': 'Needs Revision',
   'awaiting_signoff': 'Awaiting Sign-off',
-  'signoff_complete': 'Sign-off Complete',
+  'signoff_approved': 'Sign-off Approved',
   'contract_pending': 'Contract Pending',
   'contract_received': 'Contract Received'
 };
@@ -55,13 +55,13 @@ export const STATUS_LABELS: Record<Application['status'], string> = {
 export const STATUS_DESCRIPTIONS: Record<Application['status'], string> = {
   'submitted': 'Application has been submitted and is waiting for initial review',
   'under_review': 'Application is being reviewed by assigned reviewers',
-  'approved': 'Application has been approved and is ready for sign-off process',
+  'manager_approved': 'Application has been approved by grants manager and is ready for sign-off process',
   'rejected': 'Application has been rejected and cannot proceed further',
   'withdrawn': 'Application has been withdrawn by the applicant',
   'editable': 'Application can be edited and resubmitted by the applicant',
   'needs_revision': 'Application requires revisions based on reviewer feedback',
   'awaiting_signoff': 'Application is waiting for management sign-off approvals',
-  'signoff_complete': 'All sign-offs are complete, ready for contract generation',
+  'signoff_approved': 'All sign-offs are complete, ready for contract generation',
   'contract_pending': 'Contract has been generated and sent to applicant',
   'contract_received': 'Signed contract has been received from applicant'
 };

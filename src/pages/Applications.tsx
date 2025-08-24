@@ -38,7 +38,7 @@ import { submitContract } from '../services/applicationsService';
 
 interface ReviewFormData {
   comments: string;
-  decision: 'approved' | 'rejected' | 'under_review' | 'needs_revision';
+  decision: 'manager_approved' | 'rejected' | 'under_review' | 'needs_revision';
 }
 
 const Applications = () => {
@@ -567,7 +567,8 @@ const Applications = () => {
     const statusCounts = {
       submitted: allApplications.filter(app => app.status === 'submitted').length,
       under_review: allApplications.filter(app => app.status === 'under_review').length,
-      approved: allApplications.filter(app => app.status === 'approved').length,
+      manager_approved: allApplications.filter(app => app.status === 'manager_approved').length,
+      signoff_approved: allApplications.filter(app => app.status === 'signoff_approved').length,
       rejected: allApplications.filter(app => app.status === 'rejected').length,
       withdrawn: allApplications.filter(app => app.status === 'withdrawn').length,
       editable: allApplications.filter(app => app.status === 'editable').length,
@@ -805,8 +806,14 @@ const Applications = () => {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">{statusCounts.approved}</div>
-              <p className="text-sm text-gray-600">Approved</p>
+              <div className="text-2xl font-bold text-green-600">{statusCounts.manager_approved}</div>
+              <p className="text-sm text-gray-600">Manager Approved</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-emerald-600">{statusCounts.signoff_approved}</div>
+              <p className="text-sm text-gray-600">Sign-off Approved</p>
             </CardContent>
           </Card>
           <Card>
@@ -845,7 +852,8 @@ const Applications = () => {
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="submitted">Submitted</SelectItem>
                       <SelectItem value="under_review">Under Review</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="manager_approved">Manager Approved</SelectItem>
+                      <SelectItem value="signoff_approved">Sign-off Approved</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
                       <SelectItem value="withdrawn">Withdrawn</SelectItem>
                       <SelectItem value="editable">Editable</SelectItem>
@@ -969,7 +977,7 @@ const Applications = () => {
                             <UserPlus className="h-4 w-4 mr-1" />
                             Assign
                           </Button>
-                          {application.status === 'approved' && (
+                          {application.status === 'manager_approved' && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -1142,7 +1150,7 @@ const Applications = () => {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="under_review">Under Review</SelectItem>
-                              <SelectItem value="approved">Approve</SelectItem>
+                              <SelectItem value="manager_approved">Manager Approve</SelectItem>
                               <SelectItem value="rejected">Reject</SelectItem>
                               <SelectItem value="needs_revision">Request Revision</SelectItem>
                             </SelectContent>

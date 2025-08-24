@@ -15,7 +15,7 @@ export interface SignOffSubmissionData {
 }
 
 /**
- * Initiate sign-off workflow for an approved application
+ * Initiate sign-off workflow for a manager approved application
  */
 export const initiateSignOffWorkflow = async (
   applicationId: string,

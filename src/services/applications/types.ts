@@ -40,7 +40,7 @@ export interface Application {
   applicantName: string;
   email: string;
   proposalTitle: string;
-  status: 'submitted' | 'under_review' | 'approved' | 'rejected' | 'withdrawn' | 'editable' | 'awaiting_signoff' | 'signoff_complete' | 'contract_pending' | 'contract_received' | 'needs_revision';
+  status: 'submitted' | 'under_review' | 'manager_approved' | 'rejected' | 'withdrawn' | 'editable' | 'awaiting_signoff' | 'signoff_approved' | 'contract_pending' | 'contract_received' | 'needs_revision';
   submissionDate: string;
   reviewComments: string;
   biodata?: ResearcherBiodata;

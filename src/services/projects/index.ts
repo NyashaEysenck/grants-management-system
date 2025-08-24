@@ -121,17 +121,21 @@ export const submitRequisition = async (projectId: string, requisition: Omit<Req
 };
 
 /**
- * Update requisition status (legacy function - now handled by backend workflows)
+ * Update requisition status (approve/reject)
  */
 export const updateRequisitionStatus = async (
   projectId: string, 
   requisitionId: string, 
-  status: Requisition['status'], 
-  reviewNotes?: string,
-  reviewedBy?: string
-): Promise<boolean> => {
-  console.warn('updateRequisitionStatus is deprecated - requisition status updates are handled by backend workflows');
-  return true;
+  status: 'approved' | 'rejected', 
+  reviewNotes: string, 
+  reviewedBy: string
+): Promise<void> => {
+  try {
+    await projectsApi.updateRequisitionStatus(projectId, requisitionId, status, reviewNotes, reviewedBy);
+  } catch (error) {
+    console.error('Error updating requisition status:', error);
+    handleApiError(error);
+  }
 };
 
 /**
@@ -311,7 +315,6 @@ export const createRequisition = async (projectId: string, requisitionData: any)
     handleApiError(error);
   }
 };
-
 
 // Export types for use by components
 export type { Project, ProjectCreate, Milestone, Requisition, Partner };

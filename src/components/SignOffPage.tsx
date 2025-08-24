@@ -28,6 +28,7 @@ const SignOffPage = () => {
   const [application, setApplication] = useState<Application | null>(null);
   const [approval, setApproval] = useState<SignOffApproval | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedDecision, setSubmittedDecision] = useState<'approved' | 'rejected' | null>(null);
 
   const form = useForm<SignOffFormData>({
     defaultValues: {
@@ -113,6 +114,7 @@ const SignOffPage = () => {
 
       if (result?.success) {
         setIsSubmitted(true);
+        setSubmittedDecision(data.decision);
         toast({
           title: "Approval Submitted",
           description: `Your ${data.decision} decision has been recorded successfully.`,
@@ -146,21 +148,27 @@ const SignOffPage = () => {
   }
 
   if (isSubmitted || approval.status !== 'pending') {
+    // Determine which icon and message to show
+    const isNewSubmission = isSubmitted && submittedDecision;
+    const finalStatus = isNewSubmission ? submittedDecision : approval.status;
+    
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
-            {approval.status === 'approved' ? (
+            {finalStatus === 'approved' ? (
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            ) : (
+            ) : finalStatus === 'rejected' ? (
               <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            ) : (
+              <CheckCircle className="h-16 w-16 text-blue-500 mx-auto mb-4" />
             )}
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {approval.status === 'pending' ? 'Approval Submitted' : `Already ${approval.status}`}
+              {isNewSubmission ? 'Decision Submitted Successfully' : `Already ${approval.status}`}
             </h2>
             <p className="text-gray-600">
-              {approval.status === 'pending' 
-                ? 'Your approval decision has been submitted successfully.'
+              {isNewSubmission 
+                ? `Your ${submittedDecision} decision has been submitted successfully.`
                 : `You have already ${approval.status} this application.`
               }
             </p>

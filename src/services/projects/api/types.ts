@@ -55,12 +55,12 @@ export interface FinalReport {
 
 export interface ClosureWorkflow {
   status: 'pending' | 'vc_review' | 'signed_off' | 'closed';
-  vc_signoff_token?: string;
-  vc_signed_by?: string;
-  vc_signed_date?: string;
-  vc_notes?: string;
-  closure_certificate_generated?: boolean;
-  closure_certificate_date?: string;
+  vcSignOffToken?: string;
+  vcSignedBy?: string;
+  vcSignedDate?: string;
+  vcNotes?: string;
+  closureCertificateGenerated?: boolean;
+  closureCertificateDate?: string;
 }
 
 export interface Project {

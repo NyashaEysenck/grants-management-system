@@ -200,4 +200,26 @@ export const projectsApi = {
     
     console.log('Requisition created successfully:', response);
   },
+
+  /**
+   * Update requisition status (approve/reject)
+   */
+  updateRequisitionStatus: async (
+    projectId: string, 
+    requisitionId: string, 
+    status: 'approved' | 'rejected', 
+    reviewNotes: string, 
+    reviewedBy: string
+  ): Promise<void> => {
+    try {
+      await apiClient.patch(`/projects/${projectId}/requisitions/${requisitionId}/status`, {
+        status,
+        review_notes: reviewNotes,
+        reviewed_by: reviewedBy
+      });
+    } catch (error) {
+      console.error(`Error updating requisition status for ${requisitionId}:`, error);
+      throw error;
+    }
+  },
 };
