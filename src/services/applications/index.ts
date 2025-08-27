@@ -21,6 +21,7 @@ export {
   markApplicationEditable,
   resubmitApplication,
   updateApplicationForRevision,
+  generateAwardLetter,
   type ApplicationSubmissionData,
   type ApplicationUpdateData
 } from './api/applicationsApi';

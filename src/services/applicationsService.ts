@@ -27,6 +27,7 @@ import {
   markApplicationEditable as apiMarkApplicationEditable,
   resubmitApplication as apiResubmitApplication,
   updateApplicationForRevision as apiUpdateApplicationForRevision,
+  generateAwardLetter as apiGenerateAwardLetter,
   
   addReviewComment as apiAddReviewComment,
   
@@ -67,6 +68,7 @@ export const withdrawApplication = apiWithdrawApplication;
 export const markApplicationEditable = apiMarkApplicationEditable;
 export const resubmitApplication = apiResubmitApplication;
 export const updateApplicationForRevision = apiUpdateApplicationForRevision;
+export const generateAwardLetter = apiGenerateAwardLetter;
 
 // Reviewer operations
 export const addReviewComment = apiAddReviewComment;

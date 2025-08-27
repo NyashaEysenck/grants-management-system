@@ -37,6 +37,7 @@ import SignOffStatusCard from '../components/SignOffStatusCard';
 import ReviewerFeedbackCard from '../components/ReviewerFeedbackCard';
 import ApplicationUpdateDialog from '../components/ApplicationUpdateDialog';
 import { submitContract } from '../services/applicationsService';
+import { downloadAwardLetter, generateAwardLetter } from '../services/applications/api/applicationsApi';
 
 interface ReviewFormData {
   comments: string;
@@ -475,6 +476,7 @@ const Applications = () => {
                   key={application.id} 
                   application={application}
                   onContractUpload={handleContractUpload}
+                  onAwardLetterGenerated={() => loadUserApplications()}
                 />
               ))
             }
@@ -731,6 +733,24 @@ const Applications = () => {
       setIsSignOffInitiationOpen(true);
     };
 
+    const handleGenerateAwardLetter = async (application: Application) => {
+      try {
+        await generateAwardLetter(application.id);
+        toast({
+          title: 'Award Letter Generated',
+          description: 'The award letter has been generated successfully.',
+        });
+        // Refresh the manager list to reflect awardLetterGenerated=true
+        loadApplications();
+      } catch (error: any) {
+        toast({
+          title: 'Generation Failed',
+          description: error.message || 'Failed to generate the award letter.',
+          variant: 'destructive',
+        });
+      }
+    };
+
     const handleDownloadDocument = async (application: Application) => {
       if (!application.proposalFileName) {
         toast({
@@ -752,6 +772,22 @@ const Applications = () => {
           title: "Download Failed",
           description: error.message || "Failed to download the document.",
           variant: "destructive"
+        });
+      }
+    };
+
+    const handleDownloadAwardLetter = async (application: Application) => {
+      try {
+        await downloadAwardLetter(application.id);
+        toast({
+          title: 'Download Started',
+          description: 'The award letter download has started.',
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Download Failed',
+          description: error.message || 'Failed to download the award letter.',
+          variant: 'destructive',
         });
       }
     };
@@ -1031,6 +1067,28 @@ const Applications = () => {
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
                               Initiate Sign-off
+                            </Button>
+                          )}
+                          {application.status === 'signoff_approved' && !application.awardLetterGenerated && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleGenerateAwardLetter(application)}
+                              className="text-purple-600 hover:text-purple-700"
+                            >
+                              <FileText className="h-4 w-4 mr-1" />
+                              Generate Award Letter
+                            </Button>
+                          )}
+                          {application.awardLetterGenerated && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownloadAwardLetter(application)}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Award Letter
                             </Button>
                           )}
                           {application.status === 'rejected' && (

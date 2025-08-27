@@ -2,6 +2,7 @@ import { apiClient } from '../../../lib/api';
 import { Application } from '../types';
 import { mapApplicationResponse, mapApplicationsList } from '../mappers';
 import { handleApplicationError } from '../utils/errorHandling';
+import api from '../../../lib/api';
 
 export interface ApplicationSubmissionData {
   grantId: string;
@@ -47,6 +48,52 @@ export const getApplication = async (id: string): Promise<Application> => {
     const response = await apiClient.get(`/applications/${id}`);
     console.log('Application details received:', response);
     return mapApplicationResponse(response);
+  } catch (error) {
+    handleApplicationError(error);
+  }
+};
+
+/**
+ * Generate award letter (manager/admin only) once application is signoff_approved
+ */
+export const generateAwardLetter = async (id: string): Promise<void> => {
+  try {
+    console.log(`Generating award letter for application ${id}`);
+    await apiClient.post(`/applications/${id}/award-letter/generate`);
+    console.log('Award letter generated');
+  } catch (error) {
+    handleApplicationError(error);
+  }
+};
+
+/**
+ * Download generated award letter for an application
+ */
+export const downloadAwardLetter = async (id: string): Promise<void> => {
+  try {
+    const response = await api.get(`/applications/${id}/award-letter`, {
+      responseType: 'blob',
+      timeout: 60000,
+    });
+
+    const contentType = response.headers['content-type'] || 'application/octet-stream';
+    const blob = new Blob([response.data], { type: contentType });
+    const url = window.URL.createObjectURL(blob);
+
+    let filename = `award_letter_${id}.html`;
+    const contentDisposition = response.headers['content-disposition'] || '';
+    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+    if (filenameMatch && filenameMatch[1]) {
+      filename = filenameMatch[1].replace(/['"]/g, '');
+    }
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   } catch (error) {
     handleApplicationError(error);
   }

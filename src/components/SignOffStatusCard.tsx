@@ -6,15 +6,30 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Clock, XCircle, Download, Upload, FileText } from 'lucide-react';
 import { format } from 'date-fns';
-import { getSignOffStatus, type Application, type SignOffApproval } from '../services/applicationsService';
+import { getSignOffStatus, generateAwardLetter, type Application, type SignOffApproval } from '../services/applicationsService';
 
 interface SignOffStatusCardProps {
   application: Application;
   onContractUpload?: (applicationId: string) => void;
+  onAwardLetterGenerated?: (applicationId: string) => void;
 }
 
-const SignOffStatusCard = ({ application, onContractUpload }: SignOffStatusCardProps) => {
+const SignOffStatusCard = ({ application, onContractUpload, onAwardLetterGenerated }: SignOffStatusCardProps) => {
   const signOffStatus = getSignOffStatus(application);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+
+  const canGenerateAwardLetter = application.status === 'signoff_approved' && !application.awardLetterGenerated;
+
+  const handleGenerateAwardLetter = async () => {
+    if (!canGenerateAwardLetter || isGenerating) return;
+    try {
+      setIsGenerating(true);
+      await generateAwardLetter(application.id);
+      onAwardLetterGenerated?.(application.id);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const getStatusIcon = (status: SignOffApproval['status']) => {
     switch (status) {
@@ -121,7 +136,7 @@ const SignOffStatusCard = ({ application, onContractUpload }: SignOffStatusCardP
           <p className="text-sm text-gray-600">Sign-off workflow not yet initiated.</p>
         )}
 
-        {/* Award Letter Download */}
+        {/* Award Letter Download / Generate */}
         {canDownloadAwardLetter && (
           <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
             <Download className="h-4 w-4 text-blue-600" />
@@ -131,6 +146,19 @@ const SignOffStatusCard = ({ application, onContractUpload }: SignOffStatusCardP
             </div>
             <Button size="sm" variant="outline">
               Download
+            </Button>
+          </div>
+        )}
+
+        {canGenerateAwardLetter && (
+          <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+            <FileText className="h-4 w-4 text-blue-600" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-800">Generate Award Letter</p>
+              <p className="text-xs text-blue-600">Click to generate the official award letter.</p>
+            </div>
+            <Button size="sm" variant="default" disabled={isGenerating} onClick={handleGenerateAwardLetter}>
+              {isGenerating ? 'Generating...' : 'Generate'}
             </Button>
           </div>
         )}
