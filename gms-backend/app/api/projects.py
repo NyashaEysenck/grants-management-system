@@ -470,3 +470,167 @@ async def update_requisition_status(
         raise HTTPException(status_code=404, detail="Project or requisition not found")
     
     return {"message": f"Requisition {status_update.status} successfully"}
+
+@router.get("/{project_id}/progress-submissions")
+async def get_progress_submissions(
+    project_id: str,
+    current_user = Depends(get_current_active_user)
+):
+    """Get all progress report submissions for project monitoring"""
+    db = await get_database()
+    
+    project = await get_project_by_id(db, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Check access permissions for researchers
+    if current_user.role == "Researcher":
+        user_projects = await get_projects_by_user(db, current_user.email)
+        if not any(p.id == project.id for p in user_projects):
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Get milestones with progress reports
+    progress_submissions = []
+    for milestone in project.milestones:
+        if milestone.progress_report_uploaded:
+            progress_submissions.append({
+                "milestone_id": milestone.id,
+                "milestone_title": milestone.title,
+                "due_date": milestone.due_date,
+                "status": milestone.status,
+                "progress_report_filename": milestone.progress_report_filename,
+                "progress_report_date": milestone.progress_report_date,
+                "is_overdue": milestone.is_overdue or False
+            })
+    
+    return {
+        "project_id": str(project.id),
+        "project_title": project.title,
+        "progress_submissions": progress_submissions,
+        "total_milestones": len(project.milestones),
+        "submitted_reports": len(progress_submissions)
+    }
+
+@router.get("/monitoring-dashboard")
+async def get_monitoring_dashboard(
+    current_user = Depends(require_role("Grants Manager"))
+):
+    """Get monitoring dashboard data for grants managers"""
+    db = await get_database()
+    
+    projects = await get_all_projects(db)
+    
+    dashboard_data = {
+        "total_projects": len(projects),
+        "active_projects": len([p for p in projects if p.status == "active"]),
+        "overdue_milestones": 0,
+        "pending_reports": 0,
+        "recent_submissions": []
+    }
+    
+    # Calculate overdue milestones and pending reports
+    for project in projects:
+        for milestone in project.milestones:
+            if milestone.is_overdue:
+                dashboard_data["overdue_milestones"] += 1
+            if milestone.status == "pending" and not milestone.progress_report_uploaded:
+                dashboard_data["pending_reports"] += 1
+        
+        # Add recent progress submissions
+        for milestone in project.milestones:
+            if milestone.progress_report_uploaded and milestone.progress_report_date:
+                dashboard_data["recent_submissions"].append({
+                    "project_id": str(project.id),
+                    "project_title": project.title,
+                    "milestone_title": milestone.title,
+                    "submitted_date": milestone.progress_report_date,
+                    "filename": milestone.progress_report_filename
+                })
+    
+    # Sort recent submissions by date and limit to 10
+    dashboard_data["recent_submissions"].sort(
+        key=lambda x: x["submitted_date"], 
+        reverse=True
+    )
+    dashboard_data["recent_submissions"] = dashboard_data["recent_submissions"][:10]
+    
+    return dashboard_data
+
+@router.post("/{project_id}/final-report/review")
+async def review_final_report(
+    project_id: str,
+    review_data: dict,
+    current_user = Depends(require_role("Grants Manager"))
+):
+    """Add detailed review to final report"""
+    db = await get_database()
+    
+    project = await get_project_by_id(db, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    status = review_data.get("status")  # "approved" or "revision_required"
+    comments = review_data.get("comments", "")
+    
+    if status not in ["approved", "revision_required"]:
+        raise HTTPException(status_code=400, detail="Status must be 'approved' or 'revision_required'")
+    
+    if not comments.strip():
+        raise HTTPException(status_code=400, detail="Review comments are required")
+    
+    # Update final report with review
+    update_data = {
+        "final_report.status": status,
+        "final_report.reviewed_by": current_user.email,
+        "final_report.reviewed_date": datetime.utcnow().isoformat(),
+        "final_report.review_notes": comments,
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.projects.update_one(
+        {"_id": ObjectId(project_id)},
+        {"$set": update_data}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to update final report review")
+    
+    return {"message": f"Final report {status}", "status": status}
+
+@router.put("/{project_id}/closure/trigger")
+async def trigger_closure_process(
+    project_id: str,
+    current_user = Depends(require_role("Grants Manager"))
+):
+    """Trigger formal closure process for project"""
+    db = await get_database()
+    
+    project = await get_project_by_id(db, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Check if final report is approved
+    if not project.final_report or project.final_report.status != "approved":
+        raise HTTPException(status_code=400, detail="Final report must be approved before triggering closure")
+    
+    # Initialize closure process
+    closure_data = {
+        "status": "pending",
+        "initiated_at": datetime.utcnow().isoformat(),
+        "initiated_by": current_user.email
+    }
+    
+    result = await db.projects.update_one(
+        {"_id": ObjectId(project_id)},
+        {
+            "$set": {
+                "closure_process": closure_data,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to trigger closure process")
+    
+    return {"message": "Closure process initiated successfully", "status": "pending"}

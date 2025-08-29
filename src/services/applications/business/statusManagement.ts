@@ -31,7 +31,10 @@ export const isValidStatusTransition = (
     'editable': ['submitted'],
     'needs_revision': ['submitted', 'editable'],
     'awaiting_signoff': ['signoff_approved', 'rejected'],
-    'signoff_approved': ['contract_pending'],
+    'signoff_approved': ['award_pending_acceptance'],
+    'award_pending_acceptance': ['award_accepted', 'award_rejected'],
+    'award_accepted': ['contract_pending'],
+    'award_rejected': [],
     'contract_pending': ['contract_received'],
     'contract_received': [] // Final state
   };
@@ -52,7 +55,10 @@ export const getNextPossibleStatuses = (currentStatus: Application['status']): A
     'editable': ['submitted'],
     'needs_revision': ['submitted', 'editable'],
     'awaiting_signoff': ['signoff_approved', 'rejected'],
-    'signoff_approved': ['contract_pending'],
+    'signoff_approved': ['award_pending_acceptance'],
+    'award_pending_acceptance': ['award_accepted', 'award_rejected'],
+    'award_accepted': ['contract_pending'],
+    'award_rejected': [],
     'contract_pending': ['contract_received'],
     'contract_received': []
   };
@@ -78,6 +84,9 @@ export const getStatusPermissions = (status: Application['status']): {
     'needs_revision': { requiresAdmin: true, requiresReviewer: true, requiresApplicant: false },
     'awaiting_signoff': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false },
     'signoff_approved': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false },
+    'award_pending_acceptance': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false },
+    'award_accepted': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false },
+    'award_rejected': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false },
     'contract_pending': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false },
     'contract_received': { requiresAdmin: true, requiresReviewer: false, requiresApplicant: false }
   };
@@ -89,7 +98,7 @@ export const getStatusPermissions = (status: Application['status']): {
  * Check if an application is in a final state
  */
 export const isApplicationInFinalState = (status: Application['status']): boolean => {
-  const finalStates: Application['status'][] = ['contract_received', 'rejected', 'withdrawn'];
+  const finalStates: Application['status'][] = ['contract_received', 'rejected', 'withdrawn', 'award_rejected'];
   return finalStates.includes(status);
 };
 
@@ -97,7 +106,7 @@ export const isApplicationInFinalState = (status: Application['status']): boolea
  * Check if an application is active (can be worked on)
  */
 export const isApplicationActive = (application: Application): boolean => {
-  const inactiveStates: Application['status'][] = ['contract_received', 'rejected', 'withdrawn'];
+  const inactiveStates: Application['status'][] = ['contract_received', 'rejected', 'withdrawn', 'award_rejected'];
   
   // Check if status is inactive
   if (inactiveStates.includes(application.status)) {

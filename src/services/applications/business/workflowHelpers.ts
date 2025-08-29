@@ -92,7 +92,10 @@ export const calculateApplicationProgress = (application: Application): number =
     'manager_approved': 60,
     'awaiting_signoff': 70,
     'signoff_approved': 85,
-    'contract_pending': 90,
+    'award_pending_acceptance': 87,
+    'award_accepted': 90,
+    'award_rejected': 0,
+    'contract_pending': 95,
     'contract_received': 100,
     'rejected': 0,
     'withdrawn': 0

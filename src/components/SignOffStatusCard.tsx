@@ -6,30 +6,20 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Clock, XCircle, Download, Upload, FileText } from 'lucide-react';
 import { format } from 'date-fns';
-import { getSignOffStatus, generateAwardLetter, type Application, type SignOffApproval } from '../services/applicationsService';
+import { getSignOffStatus, type Application, type SignOffApproval } from '../services/applications';
+import AwardDocumentUpload from './AwardDocumentUpload';
+import AwardAcceptanceDialog from './AwardAcceptanceDialog';
 
 interface SignOffStatusCardProps {
   application: Application;
+  userRole: string;
   onContractUpload?: (applicationId: string) => void;
-  onAwardLetterGenerated?: (applicationId: string) => void;
+  onUpdate?: () => void;
 }
 
-const SignOffStatusCard = ({ application, onContractUpload, onAwardLetterGenerated }: SignOffStatusCardProps) => {
+const SignOffStatusCard = ({ application, userRole, onContractUpload, onUpdate }: SignOffStatusCardProps) => {
   const signOffStatus = getSignOffStatus(application);
-  const [isGenerating, setIsGenerating] = React.useState(false);
-
-  const canGenerateAwardLetter = application.status === 'signoff_approved' && !application.awardLetterGenerated;
-
-  const handleGenerateAwardLetter = async () => {
-    if (!canGenerateAwardLetter || isGenerating) return;
-    try {
-      setIsGenerating(true);
-      await generateAwardLetter(application.id);
-      onAwardLetterGenerated?.(application.id);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  const [showAcceptanceDialog, setShowAcceptanceDialog] = React.useState(false);
 
   const getStatusIcon = (status: SignOffApproval['status']) => {
     switch (status) {
@@ -136,31 +126,38 @@ const SignOffStatusCard = ({ application, onContractUpload, onAwardLetterGenerat
           <p className="text-sm text-gray-600">Sign-off workflow not yet initiated.</p>
         )}
 
-        {/* Award Letter Download / Generate */}
-        {canDownloadAwardLetter && (
+        {/* Award Document Upload/Management */}
+        {(application.status === 'signoff_approved' || application.status === 'award_pending_acceptance' || application.status === 'award_accepted') && (
+          <AwardDocumentUpload 
+            applicationId={application.id}
+            userRole={userRole}
+            onDocumentUploaded={onUpdate}
+          />
+        )}
+
+        {/* Award Acceptance */}
+        {application.status === 'award_pending_acceptance' && userRole.toLowerCase() === 'researcher' && (
           <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-            <Download className="h-4 w-4 text-blue-600" />
+            <FileText className="h-4 w-4 text-blue-600" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-blue-800">Award Letter Ready</p>
-              <p className="text-xs text-blue-600">Your official award letter is ready for download.</p>
+              <p className="text-sm font-medium text-blue-800">Award Decision Required</p>
+              <p className="text-xs text-blue-600">Please review and accept or reject your award.</p>
             </div>
-            <Button size="sm" variant="outline">
-              Download
+            <Button size="sm" variant="default" onClick={() => setShowAcceptanceDialog(true)}>
+              Make Decision
             </Button>
           </div>
         )}
 
-        {canGenerateAwardLetter && (
-          <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-            <FileText className="h-4 w-4 text-blue-600" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-blue-800">Generate Award Letter</p>
-              <p className="text-xs text-blue-600">Click to generate the official award letter.</p>
-            </div>
-            <Button size="sm" variant="default" disabled={isGenerating} onClick={handleGenerateAwardLetter}>
-              {isGenerating ? 'Generating...' : 'Generate'}
-            </Button>
-          </div>
+        {showAcceptanceDialog && (
+          <AwardAcceptanceDialog
+            applicationId={application.id}
+            applicationTitle={application.proposalTitle}
+            awardAmount={application.awardAmount}
+            isOpen={showAcceptanceDialog}
+            onClose={() => setShowAcceptanceDialog(false)}
+            onDecisionMade={() => onUpdate?.()}
+          />
         )}
 
         {/* Contract Upload */}

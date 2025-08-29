@@ -13,6 +13,12 @@ export const getStatusColor = (status: Application['status']): string => {
       return 'bg-green-100 text-green-800';
     case 'signoff_approved':
       return 'bg-emerald-100 text-emerald-800';
+    case 'award_pending_acceptance':
+      return 'bg-purple-100 text-purple-800';
+    case 'award_accepted':
+      return 'bg-green-100 text-green-800';
+    case 'award_rejected':
+      return 'bg-red-100 text-red-800';
     case 'rejected':
       return 'bg-red-100 text-red-800';
     case 'withdrawn':
@@ -45,6 +51,9 @@ export const STATUS_LABELS: Record<Application['status'], string> = {
   'needs_revision': 'Needs Revision',
   'awaiting_signoff': 'Awaiting Sign-off',
   'signoff_approved': 'Sign-off Approved',
+  'award_pending_acceptance': 'Award Pending Acceptance',
+  'award_accepted': 'Award Accepted',
+  'award_rejected': 'Award Rejected',
   'contract_pending': 'Contract Pending',
   'contract_received': 'Contract Received'
 };
@@ -61,7 +70,10 @@ export const STATUS_DESCRIPTIONS: Record<Application['status'], string> = {
   'editable': 'Application can be edited and resubmitted by the applicant',
   'needs_revision': 'Application requires revisions based on reviewer feedback',
   'awaiting_signoff': 'Application is waiting for management sign-off approvals',
-  'signoff_approved': 'All sign-offs are complete, ready for contract generation',
+  'signoff_approved': 'All sign-offs are complete, ready for award document upload',
+  'award_pending_acceptance': 'Award document uploaded, awaiting researcher acceptance',
+  'award_accepted': 'Researcher has accepted the award, ready for contract generation',
+  'award_rejected': 'Researcher has rejected the award',
   'contract_pending': 'Contract has been generated and sent to applicant',
   'contract_received': 'Signed contract has been received from applicant'
 };
