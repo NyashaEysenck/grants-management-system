@@ -470,13 +470,14 @@ const Applications = () => {
 
             {/* Sign-off Status Cards */}
             {filteredApplications
-              .filter(app => app.status === 'awaiting_signoff' || app.status === 'signoff_approved' || app.status === 'contract_pending' || app.status === 'contract_received')
+              .filter(app => app.status === 'awaiting_signoff' || app.status === 'signoff_approved' || app.status === 'award_pending_acceptance' || app.status === 'award_accepted' || app.status === 'contract_pending' || app.status === 'contract_received')
               .map(application => (
                 <SignOffStatusCard 
                   key={application.id} 
                   application={application}
+                  userRole={user?.role || 'Researcher'}
                   onContractUpload={handleContractUpload}
-                  onAwardLetterGenerated={() => loadUserApplications()}
+                  onUpdate={() => loadUserApplications()}
                 />
               ))
             }
