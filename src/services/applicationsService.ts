@@ -55,6 +55,8 @@ import {
   type ReviewCommentData
 } from './applications';
 
+import { apiClient } from '@/lib/api';
+
 // Re-export types for backward compatibility
 export type { Application, ResearcherBiodata, ReviewHistoryEntry, SignOffApproval, RevisionNote };
 
@@ -92,6 +94,21 @@ export const generateReviewToken = generateToken;
 
 // Utility functions
 export const getStatusColor = getStatusColorUtil;
+
+// Award acceptance functions
+export const awardAcceptanceService = {
+  async submitAwardDecision(applicationId: string, decision: 'accepted' | 'rejected', comments?: string): Promise<void> {
+    try {
+      await apiClient.post(`/applications/${applicationId}/accept-award`, {
+        decision,
+        comments: comments?.trim()
+      });
+    } catch (error) {
+      console.error('Error submitting award decision:', error);
+      throw error;
+    }
+  }
+};
 
 // Legacy functions that have been removed (now handled by backend)
 // These functions are deprecated and will throw errors if used

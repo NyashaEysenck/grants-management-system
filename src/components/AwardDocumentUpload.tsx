@@ -12,16 +12,10 @@ import {
   CheckCircle,
   AlertCircle 
 } from 'lucide-react';
-import { apiClient } from '@/lib/api';
 import { format } from 'date-fns';
+import { awardDocumentService, type AwardDocument } from '@/services/documentsService';
 
-interface AwardDocument {
-  id: string;
-  filename: string;
-  file_type: string;
-  uploaded_at: string;
-  uploaded_by: string;
-}
+// AwardDocument interface is now imported from documentsService
 
 interface AwardDocumentUploadProps {
   applicationId: string;
@@ -40,8 +34,8 @@ const AwardDocumentUpload = ({ applicationId, userRole, onDocumentUploaded }: Aw
   // Load existing award documents
   const loadDocuments = useCallback(async () => {
     try {
-      const response = await apiClient.get(`/applications/${applicationId}/award-documents`);
-      setDocuments(response);
+      const documents = await awardDocumentService.getAwardDocuments(applicationId);
+      setDocuments(documents);
     } catch (error) {
       console.error('Failed to load award documents:', error);
     } finally {
@@ -58,18 +52,7 @@ const AwardDocumentUpload = ({ applicationId, userRole, onDocumentUploaded }: Aw
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      await apiClient.post(
-        `/applications/${applicationId}/award-documents/upload`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      await awardDocumentService.uploadAwardDocument(applicationId, file);
 
       toast({
         title: "Award Document Uploaded",
@@ -92,27 +75,7 @@ const AwardDocumentUpload = ({ applicationId, userRole, onDocumentUploaded }: Aw
 
   const downloadDocument = async (documentId: string, filename: string) => {
     try {
-      const response = await apiClient.get(
-        `/applications/${applicationId}/award-documents/${documentId}/download`
-      );
-
-      // Create download link
-      const byteCharacters = atob(response.file_data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: response.file_type });
-
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      await awardDocumentService.downloadAwardDocument(applicationId, documentId, filename);
     } catch (error: any) {
       toast({
         title: "Download Failed",
@@ -126,7 +89,7 @@ const AwardDocumentUpload = ({ applicationId, userRole, onDocumentUploaded }: Aw
     if (!canUpload) return;
 
     try {
-      await apiClient.delete(`/applications/${applicationId}/award-documents/${documentId}`);
+      await awardDocumentService.deleteAwardDocument(applicationId, documentId);
       
       toast({
         title: "Document Deleted",

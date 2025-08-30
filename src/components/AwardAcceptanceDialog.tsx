@@ -18,7 +18,7 @@ import {
   AlertTriangle,
   Award
 } from 'lucide-react';
-import { apiClient } from '@/lib/api';
+import { awardAcceptanceService } from '@/services/applicationsService';
 
 interface AwardAcceptanceDialogProps {
   applicationId: string;
@@ -45,10 +45,7 @@ const AwardAcceptanceDialog = ({
   const handleDecision = async (decision: 'accepted' | 'rejected') => {
     setIsProcessing(true);
     try {
-      await apiClient.post(`/applications/${applicationId}/accept-award`, {
-        decision,
-        comments: comments.trim()
-      });
+      await awardAcceptanceService.submitAwardDecision(applicationId, decision, comments);
 
       toast({
         title: decision === 'accepted' ? 'Award Accepted' : 'Award Rejected',

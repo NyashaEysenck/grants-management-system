@@ -409,6 +409,87 @@ class DocumentsService {
 
 export const documentsService = new DocumentsService();
 
+// Award Document Management Functions
+export interface AwardDocument {
+  id: string;
+  filename: string;
+  file_type: string;
+  uploaded_at: string;
+  uploaded_by: string;
+}
+
+export const awardDocumentService = {
+  // Get all award documents for an application
+  async getAwardDocuments(applicationId: string): Promise<AwardDocument[]> {
+    try {
+      const response = await apiClient.get<AwardDocument[]>(`/applications/${applicationId}/award-documents`);
+      return response || [];
+    } catch (error) {
+      console.error('Error fetching award documents:', error);
+      throw error;
+    }
+  },
+
+  // Upload an award document
+  async uploadAwardDocument(applicationId: string, file: File): Promise<void> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      await apiClient.post(
+        `/applications/${applicationId}/award-documents/upload`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+    } catch (error) {
+      console.error('Error uploading award document:', error);
+      throw error;
+    }
+  },
+
+  // Download an award document
+  async downloadAwardDocument(applicationId: string, documentId: string, filename: string): Promise<void> {
+    try {
+      const response = await apiClient.get(`/applications/${applicationId}/award-documents/${documentId}/download`);
+
+      // Create download link
+      const byteCharacters = atob(response.file_data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: response.file_type });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading award document:', error);
+      throw error;
+    }
+  },
+
+  // Delete an award document
+  async deleteAwardDocument(applicationId: string, documentId: string): Promise<void> {
+    try {
+      await apiClient.delete(`/applications/${applicationId}/award-documents/${documentId}`);
+    } catch (error) {
+      console.error('Error deleting award document:', error);
+      throw error;
+    }
+  }
+};
+
 // Export the downloadApplicationDocument function for use in components
 export const downloadApplicationDocument = (applicationId: string, filename: string): Promise<void> => 
   documentsService.downloadApplicationDocument(applicationId, filename);
