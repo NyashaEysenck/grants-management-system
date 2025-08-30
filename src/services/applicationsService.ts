@@ -110,82 +110,12 @@ export const awardAcceptanceService = {
   }
 };
 
-// Legacy functions that have been removed (now handled by backend)
-// These functions are deprecated and will throw errors if used
-
-/**
- * @deprecated This function has been removed. Applications are now fetched by user through getUserApplications()
- */
-export const getApplicationsByUser = (email: string): Application[] => {
-  throw new Error('getApplicationsByUser is deprecated. Use getUserApplications() instead.');
-};
-
-/**
- * @deprecated This function has been removed. Reviewer feedback is now handled through the backend API
- */
-export const getReviewHistory = (applicationId: string): ReviewHistoryEntry[] => {
-  throw new Error('getReviewHistory is deprecated. Review history is included in application details from the backend.');
-};
-
-/**
- * @deprecated This function has been removed. Application status changes are now handled through the backend API
- */
-export const markApplicationNeedsRevision = (id: string, feedback: string): boolean => {
-  throw new Error('markApplicationNeedsRevision is deprecated. Use updateApplicationStatus() instead.');
-};
-
-/**
- * @deprecated This function has been removed. Token storage is now handled by the backend
- */
-export const storeReviewToken = (applicationId: string, token: string): void => {
-  throw new Error('storeReviewToken is deprecated. Token management is now handled by the backend.');
-};
-
-/**
- * @deprecated This function has been removed. Token storage is now handled by the backend
- */
-export const storeSignOffToken = (applicationId: string, token: string, role: string): void => {
-  throw new Error('storeSignOffToken is deprecated. Token management is now handled by the backend.');
-};
-
-/**
- * @deprecated This function has been removed. Contract operations are now handled through the backend API
- */
-export const submitContract = (applicationId: string, contractFileName: string): boolean => {
-  throw new Error('submitContract is deprecated. Contract operations are now handled by the backend.');
-};
-
-/**
- * Contract Receipt Service - NEW IMPLEMENTATION
- */
-export const contractReceiptService = {
-  /**
-   * Confirm contract receipt (replaces deprecated confirmContractReceipt)
-   */
-  confirmReceipt: async (applicationId: string, comments?: string): Promise<void> => {
-    try {
-      const { confirmContractReceipt } = await import('./applications/api/applicationsApi');
-      await confirmContractReceipt(applicationId, comments);
-    } catch (error) {
-      console.error('Contract receipt confirmation error:', error);
-      throw error;
-    }
-  }
-};
-
-// Export new document services (that aren't already exported above)
+// Export new document services
 export {
   downloadAwardLetter,
-  downloadDocument
+  downloadDocument,
+  confirmContractReceipt
 } from './applications/api/applicationsApi';
-
-/**
- * Helper function to migrate from old getApplicationsByUser to new getUserApplications
- */
-export const migrateGetApplicationsByUser = async (email: string): Promise<Application[]> => {
-  console.warn('Using deprecated pattern. Please update to use getUserApplications() directly.');
-  return getUserApplications();
-};
 
 // Export the new modular structure for components that want to use it directly
 export * from './applications';

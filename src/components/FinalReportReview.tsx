@@ -269,7 +269,7 @@ const FinalReportReview = ({ project, userRole, userEmail, onUpdate }: FinalRepo
         <div className="text-sm text-muted-foreground">
           <p>
             Status: {finalReport.status} • 
-            Last updated: {format(new Date(project.updated_at), 'MMM dd, yyyy HH:mm')}
+            Last updated: {format(new Date(project.updatedAt), 'MMM dd, yyyy HH:mm')}
           </p>
         </div>
       </CardContent>

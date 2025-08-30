@@ -28,7 +28,7 @@ import {
   markApplicationEditable,
   canWithdrawApplication,
   canUpdateApplication,
-  contractReceiptService,
+  confirmContractReceipt,
   addReviewComment,
   type Application 
 } from '../services/applicationsService';
@@ -174,7 +174,7 @@ const ApplicationDetailView: React.FC<ApplicationDetailViewProps> = ({
 
   const handleConfirmContractReceipt = async () => {
     try {
-      await contractReceiptService.confirmReceipt(application.id);
+      await confirmContractReceipt(application.id);
       toast({
         title: "Contract Receipt Confirmed",
         description: "Contract receipt has been confirmed successfully.",

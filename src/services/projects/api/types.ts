@@ -75,8 +75,8 @@ export interface Project {
   partners?: Partner[];
   final_report?: FinalReport;
   closure_workflow?: ClosureWorkflow;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ProjectCreate {

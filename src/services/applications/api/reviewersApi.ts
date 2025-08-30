@@ -87,24 +87,24 @@ export const getApplicationByReviewToken = async (token: string): Promise<any | 
     // Convert backend response to frontend Application interface
     const application = {
       id: response.id,
-      grantId: response.grantId || response.grant_id,
-      applicantName: response.applicantName || response.applicant_name,
+      grantId: response.grantId,
+      applicantName: response.applicantName,
       email: response.email,
-      proposalTitle: response.proposalTitle || response.proposal_title,
+      proposalTitle: response.proposalTitle,
       status: response.status,
-      submissionDate: response.submissionDate || response.submission_date,
-      reviewComments: response.reviewComments || response.review_comments || '',
+      submissionDate: response.submissionDate,
+      reviewComments: response.reviewComments || '',
       biodata: response.biodata,
       deadline: response.deadline,
-      isEditable: response.isEditable || response.is_editable,
-      reviewHistory: response.reviewHistory || response.review_history || [],
-      signOffApprovals: response.signOffApprovals || response.sign_off_approvals || [],
-      awardAmount: response.awardAmount || response.award_amount,
-      contractFileName: response.contractFileName || response.contract_file_name,
-      awardLetterGenerated: response.awardLetterGenerated || response.award_letter_generated,
-      revisionCount: response.revisionCount || response.revision_count || 0,
-      originalSubmissionDate: response.originalSubmissionDate || response.original_submission_date,
-      proposalFileName: response.proposalFileName || response.proposal_file_name
+      isEditable: response.isEditable,
+      reviewHistory: response.reviewHistory || [],
+      signOffApprovals: response.signOffApprovals || [],
+      awardAmount: response.awardAmount,
+      contractFileName: response.contractFileName,
+      awardLetterGenerated: response.awardLetterGenerated,
+      revisionCount: response.revisionCount || 0,
+      originalSubmissionDate: response.originalSubmissionDate,
+      proposalFileName: response.proposalFileName
     };
     
     return application;
