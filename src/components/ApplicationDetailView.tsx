@@ -52,7 +52,7 @@ interface ApplicationDetailViewProps {
 
 interface ReviewFormData {
   comments: string;
-  decision: 'manager_approved' | 'rejected' | 'under_review' | 'needs_revision';
+  decision: Application['status'];
 }
 
 const ApplicationDetailView: React.FC<ApplicationDetailViewProps> = ({
@@ -73,7 +73,7 @@ const ApplicationDetailView: React.FC<ApplicationDetailViewProps> = ({
   const form = useForm<ReviewFormData>({
     defaultValues: {
       comments: '',
-      decision: 'under_review'
+      decision: 'under_review' as Application['status']
     }
   });
 
@@ -198,7 +198,7 @@ const ApplicationDetailView: React.FC<ApplicationDetailViewProps> = ({
         status: data.decision
       });
       
-      await updateApplicationStatus(application.id, data.decision as any, data.comments);
+      await updateApplicationStatus(application.id, data.decision, data.comments);
       
       toast({
         title: "Review Submitted",
@@ -465,7 +465,7 @@ const ApplicationDetailView: React.FC<ApplicationDetailViewProps> = ({
                       <p className="text-sm text-gray-600">{review.reviewerEmail}</p>
                     </div>
                     <div className="text-right">
-                      <Badge className={getStatusColor(review.status)}>
+                      <Badge className={getStatusColor(review.status as Application['status'])}>
                         {review.status.replace('_', ' ').toUpperCase()}
                       </Badge>
                       <p className="text-sm text-gray-600 mt-1">
