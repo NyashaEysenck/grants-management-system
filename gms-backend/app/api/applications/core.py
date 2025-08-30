@@ -123,18 +123,18 @@ async def update_application_status(
     # Update application status and comments
     update_data = {
         "status": new_status,
-        "updated_at": datetime.utcnow()
+        "updatedAt": datetime.utcnow()
     }
     
     if comments:
         update_data["reviewComments"] = comments
-        update_data["final_decision"] = new_status
+        update_data["finalDecision"] = new_status
     
     # Set editable flag for certain statuses
     if new_status in ["needs_revision", "editable"]:
-        update_data["is_editable"] = True
+        update_data["isEditable"] = True
     else:
-        update_data["is_editable"] = False
+        update_data["isEditable"] = False
     
     result = await db.applications.update_one(
         {"_id": ObjectId(application_id)},
@@ -197,28 +197,28 @@ async def update_application_status_general(
     # Build update data
     update_data = {
         "status": new_status,
-        "updated_at": datetime.utcnow()
+        "updatedAt": datetime.utcnow()
     }
     
     if comments:
         update_data["reviewComments"] = comments
         if current_user.role in ["Grants Manager", "Admin"]:
-            update_data["final_decision"] = new_status
+            update_data["finalDecision"] = new_status
     
     # Set editable flag for certain statuses
     if new_status in ["needs_revision", "editable"]:
-        update_data["is_editable"] = True
+        update_data["isEditable"] = True
     else:
-        update_data["is_editable"] = False
+        update_data["isEditable"] = False
     
     # Handle resubmission logic for researchers
     if (new_status == "submitted" and 
         current_user.role == "Researcher" and 
         application.status in ["editable", "needs_revision"]):
-        update_data["revision_count"] = (application.revision_count or 0) + 1
+        update_data["revisionCount"] = (application.revision_count or 0) + 1
         if not application.original_submission_date:
-            update_data["original_submission_date"] = application.submission_date
-        update_data["submission_date"] = datetime.utcnow().isoformat()
+            update_data["originalSubmissionDate"] = application.submission_date
+        update_data["submissionDate"] = datetime.utcnow().isoformat()
     
     # Update the application
     result = await db.applications.update_one(
@@ -262,7 +262,7 @@ async def withdraw_application(
         {
             "$set": {
                 "status": "withdrawn",
-                "updated_at": datetime.utcnow()
+                "updatedAt": datetime.utcnow()
             }
         }
     )
@@ -316,7 +316,7 @@ async def resubmit_application(
     # Update application
     update_data = {
         "status": new_status,
-        "updated_at": datetime.utcnow()
+        "updatedAt": datetime.utcnow()
     }
     
     if comments:
@@ -324,16 +324,16 @@ async def resubmit_application(
     
     # Set editable flag
     if new_status in ["needs_revision", "editable"]:
-        update_data["is_editable"] = True
+        update_data["isEditable"] = True
     else:
-        update_data["is_editable"] = False
+        update_data["isEditable"] = False
     
     # Handle resubmission
     if new_status == "submitted" and application.status in ["editable", "needs_revision"]:
-        update_data["revision_count"] = (application.revision_count or 0) + 1
+        update_data["revisionCount"] = (application.revision_count or 0) + 1
         if not application.original_submission_date:
-            update_data["original_submission_date"] = application.submission_date
-        update_data["submission_date"] = datetime.utcnow().isoformat()
+            update_data["originalSubmissionDate"] = application.submission_date
+        update_data["submissionDate"] = datetime.utcnow().isoformat()
     
     result = await db.applications.update_one(
         {"_id": ObjectId(application_id)},

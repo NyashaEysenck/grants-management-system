@@ -73,7 +73,7 @@ async def get_applications_by_status(db: AsyncIOMotorDatabase, status: str) -> L
 
 async def get_applications_by_grant_call(db: AsyncIOMotorDatabase, grant_call_id: str) -> List[Application]:
     applications = []
-    async for application in db.applications.find({"grant_call_id": grant_call_id}):
+    async for application in db.applications.find({"grantId": grant_call_id}):
         applications.append(Application.parse_obj(application))
     return applications
 
@@ -86,7 +86,7 @@ async def update_application(db: AsyncIOMotorDatabase, application_id: str, appl
     if not update_data:
         return None
     
-    update_data["updated_at"] = datetime.utcnow()
+    update_data["updatedAt"] = datetime.utcnow()
     
     result = await db.applications.update_one(
         {"_id": ObjectId(application_id)}, 
@@ -119,7 +119,7 @@ async def add_review_comment(db: AsyncIOMotorDatabase, application_id: str, revi
             "$set": {
                 "reviewComments": review_data.comments,
                 "status": new_status,
-                "updated_at": datetime.utcnow(),
+                "updatedAt": datetime.utcnow(),
                 "isEditable": new_status in ["needs_revision", "editable"]
             }
         }
@@ -135,12 +135,12 @@ async def update_application_status(db: AsyncIOMotorDatabase, application_id: st
     
     update_data = {
         "status": status,
-        "updated_at": datetime.utcnow()
+        "updatedAt": datetime.utcnow()
     }
     
     if decision_notes:
         update_data["reviewComments"] = decision_notes
-        update_data["final_decision"] = status
+        update_data["finalDecision"] = status
     
     result = await db.applications.update_one(
         {"_id": ObjectId(application_id)},

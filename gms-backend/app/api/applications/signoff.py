@@ -57,7 +57,7 @@ async def initiate_application_signoff(
             "initiated_by": current_user.email,
             "initiated_at": datetime.utcnow().isoformat()
         },
-        "updated_at": datetime.utcnow()
+        "updatedAt": datetime.utcnow()
     }
     
     result = await db.applications.update_one(
@@ -130,7 +130,7 @@ async def submit_signoff_approval(
                 "signoff_workflow.approvals.$.comments": submission.get("comments", ""),
                 "signoff_workflow.approvals.$.approver_name": submission.get("approver_name", ""),
                 "signoff_workflow.approvals.$.approved_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow()
+                "updatedAt": datetime.utcnow()
             }
         }
     )
@@ -160,16 +160,17 @@ async def submit_signoff_approval(
     update_data = {"signoff_workflow.status": workflow_status}
     if application_status:
         update_data["status"] = application_status
-        update_data["updated_at"] = datetime.utcnow()
+        update_data["updatedAt"] = datetime.utcnow()
     
     await db.applications.update_one(
         {"_id": application["_id"]},
         {"$set": update_data}
     )
     
+    refreshed = await db.applications.find_one({"_id": application["_id"]})
     return {
         "message": "Sign-off approval submitted successfully",
-        "application": build_application_response(updated_application)
+        "application": build_application_response(refreshed)
     }
 
 @router.get("/{application_id}/signoff/status")

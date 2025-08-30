@@ -47,7 +47,7 @@ async def upload_award_document(
             "$push": {"award_documents": award_doc},
             "$set": {
                 "status": "award_pending_acceptance",
-                "updated_at": datetime.utcnow()
+                "updatedAt": datetime.utcnow()
             }
         }
     )
@@ -134,7 +134,7 @@ async def delete_award_document(
         {"_id": ObjectId(application_id)},
         {
             "$pull": {"award_documents": {"id": document_id}},
-            "$set": {"updated_at": datetime.utcnow()}
+            "$set": {"updatedAt": datetime.utcnow()}
         }
     )
     
@@ -186,7 +186,7 @@ async def accept_award(
             "$set": {
                 "award_acceptance": award_acceptance,
                 "status": new_status,
-                "updated_at": datetime.utcnow()
+                "updatedAt": datetime.utcnow()
             }
         }
     )
@@ -267,7 +267,7 @@ async def generate_award_letter(
         {
             "$set": {
                 "award_letter": award_letter,
-                "updated_at": datetime.utcnow()
+                "updatedAt": datetime.utcnow()
             }
         }
     )
@@ -336,7 +336,7 @@ async def confirm_contract_receipt(
             "$set": {
                 "contract_confirmation": contract_confirmation,
                 "status": "contract_received",
-                "updated_at": datetime.utcnow()
+                "updatedAt": datetime.utcnow()
             }
         }
     )

@@ -7,6 +7,7 @@ from ..services.application_service import get_application_by_id
 from ..models.application import ReviewHistoryEntry
 import secrets
 import string
+from .applications.utils import build_application_response
 
 router = APIRouter(prefix="/reviewers", tags=["reviewers"])
 
@@ -78,22 +79,8 @@ async def get_application_by_review_token(token: str):
     if not application:
         raise HTTPException(status_code=404, detail="Invalid review token or application not found")
     
-    # Convert to Application model and return relevant fields
-    from ..schemas.application import ApplicationResponse
-    
-    return ApplicationResponse(
-        id=str(application["_id"]),
-        grant_id=application.get("grant_id", ""),
-        applicant_name=application.get("applicant_name", ""),
-        email=application.get("email", ""),
-        proposal_title=application.get("proposal_title", ""),
-        status=application.get("status", ""),
-        submission_date=application.get("submission_date", ""),
-        review_comments=application.get("review_comments", ""),
-        biodata=application.get("biodata"),
-        deadline=application.get("deadline"),
-        proposal_file_name=application.get("proposal_file_name")
-    )
+    # Use shared response builder for consistency
+    return build_application_response(application)
 
 # Deprecated: Use /applications/{application_id}/review endpoint instead
 # @router.post("/feedback/{application_id}")
