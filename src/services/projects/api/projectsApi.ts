@@ -10,6 +10,26 @@ import { Project, Milestone, Partner, Requisition, FinalReport, ProjectCreate } 
 
 export const projectsApi = {
   /**
+   * Convert file to base64 string
+   */
+  convertFileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result) {
+          // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+          const base64String = (reader.result as string).split(',')[1];
+          resolve(base64String);
+        } else {
+          reject(new Error('Failed to read file'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Error reading file'));
+      reader.readAsDataURL(file);
+    });
+  },
+
+  /**
    * Get all projects (admin/manager view) or user-specific projects (researcher view)
    */
   async getAll(): Promise<Project[]> {
@@ -101,14 +121,17 @@ export const projectsApi = {
    */
   async uploadProgressReport(projectId: string, milestoneId: string, file: File): Promise<void> {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      // Convert file to base64
+      const fileBase64 = await projectsApi.convertFileToBase64(file);
 
-      await apiClient.post(`/projects/${projectId}/milestones/${milestoneId}/progress-report`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const uploadData = {
+        filename: file.name,
+        file_data: fileBase64,
+        file_size: file.size,
+        file_type: file.type
+      };
+
+      await apiClient.post(`/projects/${projectId}/milestones/${milestoneId}/progress-report`, uploadData);
     } catch (error) {
       console.error(`Error uploading progress report for milestone ${milestoneId}:`, error);
       throw error;
@@ -120,14 +143,17 @@ export const projectsApi = {
    */
   async uploadFinalReport(projectId: string, reportType: 'narrative' | 'financial', file: File): Promise<void> {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      // Convert file to base64
+      const fileBase64 = await projectsApi.convertFileToBase64(file);
 
-      await apiClient.post(`/projects/${projectId}/final-report/${reportType}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const uploadData = {
+        filename: file.name,
+        file_data: fileBase64,
+        file_size: file.size,
+        file_type: file.type
+      };
+
+      await apiClient.post(`/projects/${projectId}/final-report/${reportType}`, uploadData);
     } catch (error) {
       console.error(`Error uploading ${reportType} report for project ${projectId}:`, error);
       throw error;

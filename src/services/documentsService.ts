@@ -117,35 +117,29 @@ class DocumentsService {
 
       console.log(`Starting upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
 
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('folder', folder);
-      formData.append('file', file);
-      if (notes) {
-        formData.append('notes', notes);
-      }
+      // Convert file to base64
+      if (onProgress) onProgress(25);
+      
+      const fileBase64 = await this.convertFileToBase64(file);
+      
+      if (onProgress) onProgress(75);
 
-      // Use apiClient for proper authentication and error handling
-      // Note: We lose progress tracking but gain proper auth handling
+      const uploadData = {
+        name,
+        folder,
+        filename: file.name,
+        file_data: fileBase64,
+        file_size: file.size,
+        file_type: file.type,
+        notes: notes || ''
+      };
+
       try {
-        // Simulate progress for user feedback
-        if (onProgress) {
-          onProgress(10);
-          setTimeout(() => onProgress(30), 100);
-          setTimeout(() => onProgress(60), 300);
-          setTimeout(() => onProgress(90), 500);
-        }
-
-        const response = await apiClient.post('/documents/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+        const response = await apiClient.post('/documents/upload', uploadData, {
           timeout: 300000, // 5 minute timeout
         });
 
-        if (onProgress) {
-          onProgress(100);
-        }
+        if (onProgress) onProgress(100);
 
         console.log('Document uploaded successfully:', response);
         return response;
@@ -178,32 +172,42 @@ class DocumentsService {
     }
   }
 
+  convertFileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result) {
+          // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+          const base64String = (reader.result as string).split(',')[1];
+          resolve(base64String);
+        } else {
+          reject(new Error('Failed to read file'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Error reading file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
   async uploadNewVersion(
     documentId: string,
     file: File,
     notes?: string
   ): Promise<{ message: string; filename: string; size: string }> {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      if (notes) {
-        formData.append('notes', notes);
-      }
+      // Convert file to base64
+      const fileBase64 = await this.convertFileToBase64(file);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/documents/${documentId}/upload-version`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        },
-        body: formData
-      });
+      const uploadData = {
+        filename: file.name,
+        file_data: fileBase64,
+        file_size: file.size,
+        file_type: file.type,
+        notes: notes || ''
+      };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Version upload failed');
-      }
-
-      return await response.json();
+      const response = await apiClient.post(`/documents/${documentId}/upload-version`, uploadData);
+      return response;
     } catch (error) {
       console.error('Error uploading new version:', error);
       throw error;
@@ -433,18 +437,17 @@ export const awardDocumentService = {
   // Upload an award document
   async uploadAwardDocument(applicationId: string, file: File): Promise<void> {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      // Convert file to base64
+      const fileBase64 = await documentsService.convertFileToBase64(file);
 
-      await apiClient.post(
-        `/applications/${applicationId}/award-documents/upload`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      const uploadData = {
+        filename: file.name,
+        file_data: fileBase64,
+        file_size: file.size,
+        file_type: file.type
+      };
+
+      await apiClient.post(`/applications/${applicationId}/award-documents/upload`, uploadData);
     } catch (error) {
       console.error('Error uploading award document:', error);
       throw error;
