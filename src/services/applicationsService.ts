@@ -156,13 +156,28 @@ export const submitContract = (applicationId: string, contractFileName: string):
 };
 
 /**
- * @deprecated This function has been removed. Contract operations are now handled through the backend API
+ * Contract Receipt Service - NEW IMPLEMENTATION
  */
-export const confirmContractReceipt = (applicationId: string): boolean => {
-  throw new Error('confirmContractReceipt is deprecated. Contract operations are now handled by the backend.');
+export const contractReceiptService = {
+  /**
+   * Confirm contract receipt (replaces deprecated confirmContractReceipt)
+   */
+  confirmReceipt: async (applicationId: string, comments?: string): Promise<void> => {
+    try {
+      const { confirmContractReceipt } = await import('./applications/api/applicationsApi');
+      await confirmContractReceipt(applicationId, comments);
+    } catch (error) {
+      console.error('Contract receipt confirmation error:', error);
+      throw error;
+    }
+  }
 };
 
-// Migration helper functions for components that need to update their usage
+// Export new document services (that aren't already exported above)
+export {
+  downloadAwardLetter,
+  downloadDocument
+} from './applications/api/applicationsApi';
 
 /**
  * Helper function to migrate from old getApplicationsByUser to new getUserApplications

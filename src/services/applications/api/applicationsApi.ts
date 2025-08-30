@@ -71,29 +71,68 @@ export const generateAwardLetter = async (id: string): Promise<void> => {
  */
 export const downloadAwardLetter = async (id: string): Promise<void> => {
   try {
-    const response = await api.get(`/applications/${id}/award-letter`, {
-      responseType: 'blob',
-      timeout: 60000,
-    });
-
-    const contentType = response.headers['content-type'] || 'application/octet-stream';
-    const blob = new Blob([response.data], { type: contentType });
-    const url = window.URL.createObjectURL(blob);
-
-    let filename = `award_letter_${id}.html`;
-    const contentDisposition = response.headers['content-disposition'] || '';
-    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-    if (filenameMatch && filenameMatch[1]) {
-      filename = filenameMatch[1].replace(/['"]/g, '');
+    console.log(`Downloading award letter for application ${id}`);
+    const response = await apiClient.get(`/applications/${id}/award-letter`);
+    
+    const letterData = response.data;
+    
+    // Convert base64 to blob
+    const byteCharacters = atob(letterData.file_data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
     }
-
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: letterData.file_type });
+    
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename;
+    a.download = letterData.filename;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+    
+    console.log('Award letter downloaded successfully');
+  } catch (error) {
+    handleApplicationError(error);
+  }
+};
+
+/**
+ * Confirm contract receipt (manager/admin only)
+ */
+export const confirmContractReceipt = async (id: string, comments?: string): Promise<void> => {
+  try {
+    console.log(`Confirming contract receipt for application ${id}`);
+    await apiClient.post(`/applications/${id}/contract/confirm-receipt`, {
+      comments: comments || ''
+    });
+    console.log('Contract receipt confirmed');
+  } catch (error) {
+    handleApplicationError(error);
+  }
+};
+
+/**
+ * Download application proposal document
+ */
+export const downloadDocument = async (id: string): Promise<void> => {
+  try {
+    console.log(`Downloading document for application ${id}`);
+    const response = await apiClient.get(`/applications/${id}/document`);
+    
+    const docData = response.data;
+    
+    // For now, just show the metadata since actual file storage needs implementation
+    console.log('Document metadata:', docData);
+    
+    // In a real implementation, you would handle the file_data like in downloadAwardLetter
+    // For now, just show a message to the user
+    alert(`Document: ${docData.filename}\nSize: ${docData.file_size} bytes\nNote: File storage integration needed for actual download.`);
+    
   } catch (error) {
     handleApplicationError(error);
   }

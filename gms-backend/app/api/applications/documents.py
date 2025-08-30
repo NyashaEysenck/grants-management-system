@@ -231,3 +231,148 @@ async def get_acceptance_status(
         "can_accept": False,
         "has_award_documents": len(getattr(application, 'award_documents', [])) > 0
     }
+
+@router.post("/{application_id}/award-letter/generate")
+async def generate_award_letter(
+    application_id: str,
+    current_user = Depends(require_role("Grants Manager"))
+):
+    """Generate award letter for signoff approved application"""
+    db = await get_database()
+    
+    application = await get_application_by_id(db, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    if application.status != "signoff_approved":
+        raise HTTPException(status_code=400, detail="Can only generate award letter for signoff approved applications")
+    
+    # Create award letter data
+    award_letter = {
+        "id": f"award_letter_{ObjectId()}",
+        "filename": f"award_letter_{application.applicantName.replace(' ', '_')}.pdf",
+        "generated_at": datetime.utcnow().isoformat(),
+        "generated_by": current_user.email,
+        "application_id": application_id,
+        "applicant_name": application.applicantName,
+        "proposal_title": application.proposalTitle,
+        "award_amount": getattr(application, 'signoff_workflow', {}).get('award_amount', 0),
+        "file_data": f"base64_encoded_award_letter_content_for_{application_id}",  # In real implementation, generate PDF
+        "file_type": "application/pdf"
+    }
+    
+    # Add to application's award_letter field
+    result = await db.applications.update_one(
+        {"_id": ObjectId(application_id)},
+        {
+            "$set": {
+                "award_letter": award_letter,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to generate award letter")
+    
+    return {"message": "Award letter generated successfully", "letter_id": award_letter["id"]}
+
+@router.get("/{application_id}/award-letter")
+async def download_award_letter(
+    application_id: str,
+    current_user = Depends(get_current_active_user)
+):
+    """Download generated award letter"""
+    db = await get_database()
+    
+    application = await get_application_by_id(db, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Check access permissions
+    if current_user.role == "Researcher" and application.email != current_user.email:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    award_letter = getattr(application, 'award_letter', None)
+    if not award_letter:
+        raise HTTPException(status_code=404, detail="Award letter not found. Please generate it first.")
+    
+    return {
+        "filename": award_letter["filename"],
+        "file_type": award_letter["file_type"],
+        "file_data": award_letter["file_data"],
+        "generated_at": award_letter["generated_at"],
+        "generated_by": award_letter["generated_by"]
+    }
+
+@router.post("/{application_id}/contract/confirm-receipt")
+async def confirm_contract_receipt(
+    application_id: str,
+    confirmation_data: dict,
+    current_user = Depends(require_role("Grants Manager"))
+):
+    """Confirm receipt of signed contract"""
+    db = await get_database()
+    
+    application = await get_application_by_id(db, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    if application.status != "contract_pending":
+        raise HTTPException(status_code=400, detail="Contract receipt can only be confirmed for applications with contract_pending status")
+    
+    # Create contract confirmation record
+    contract_confirmation = {
+        "confirmed_at": datetime.utcnow().isoformat(),
+        "confirmed_by": current_user.email,
+        "comments": confirmation_data.get("comments", ""),
+        "status": "received"
+    }
+    
+    # Update application status
+    result = await db.applications.update_one(
+        {"_id": ObjectId(application_id)},
+        {
+            "$set": {
+                "contract_confirmation": contract_confirmation,
+                "status": "contract_received",
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to confirm contract receipt")
+    
+    return {"message": "Contract receipt confirmed successfully", "status": "contract_received"}
+
+@router.get("/{application_id}/document")
+async def download_application_document(
+    application_id: str,
+    current_user = Depends(get_current_active_user)
+):
+    """Download original application proposal document"""
+    db = await get_database()
+    
+    application = await get_application_by_id(db, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Check access permissions
+    if current_user.role == "Researcher" and application.email != current_user.email:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Check if proposal file exists
+    if not hasattr(application, 'proposalFileName') or not application.proposalFileName:
+        raise HTTPException(status_code=404, detail="Application document not found")
+    
+    # In a real implementation, you would fetch the actual file from storage
+    # For now, return the metadata that would allow downloading
+    return {
+        "filename": application.proposalFileName,
+        "file_type": getattr(application, 'proposalFileType', 'application/pdf'),
+        "file_size": getattr(application, 'proposalFileSize', 0),
+        "uploaded_at": getattr(application, 'submissionDate', ''),
+        # In real implementation, include file_data or a download URL
+        "message": "Document metadata retrieved. Implement actual file storage integration for download."
+    }

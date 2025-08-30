@@ -22,6 +22,9 @@ export {
   resubmitApplication,
   updateApplicationForRevision,
   generateAwardLetter,
+  downloadAwardLetter,
+  confirmContractReceipt,
+  downloadDocument,
   type ApplicationSubmissionData,
   type ApplicationUpdateData
 } from './api/applicationsApi';
